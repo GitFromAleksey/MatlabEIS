@@ -9,15 +9,23 @@ simIn = Simulink.SimulationInput(model);
 
 % get_param('Randles/Sine Wave','dialogparameters') % получает все параметры компонента Step
 
-arr_size = (10000/200)
+freq_start = 3;
+freq_stop  = 10000;
+freq_step  = 200;
+
+arr_size = (freq_stop/freq_step);
 result = zeros(1, arr_size);
 frequencies = zeros(1, arr_size);
 cnt = 1;
-for freq = 100:200:10000
+
+if freq_start == 0
+    freq_start = 1;
+end
+for freq = freq_start : freq_step : freq_stop
 
 % freq = 1000; % частота в Гц
 gen_freq = freq*2*pi; % частота в рад/сек
-sim_time = 5*1/freq; % время симуляции 2 периода колебаний
+sim_time = 2*1/freq; % время симуляции 2 периода колебаний
 
 fprintf('-----------------------------------------------------------\n');
 fprintf('Частота: %f\n', freq);
