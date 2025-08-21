@@ -9,39 +9,58 @@ simIn = Simulink.SimulationInput(model);
 
 % get_param('Randles/Sine Wave','dialogparameters') % получает все параметры компонента Step
 
-freq = 100; % частота в Гц
+arr_size = (10000/200)
+result = zeros(1, arr_size);
+frequencies = zeros(1, arr_size);
+cnt = 1;
+for freq = 100:200:10000
+
+% freq = 1000; % частота в Гц
 gen_freq = freq*2*pi; % частота в рад/сек
 sim_time = 5*1/freq; % время симуляции 2 периода колебаний
+
+fprintf('-----------------------------------------------------------\n');
+fprintf('Частота: %f\n', freq);
+fprintf('Время симуляции: %f\n', sim_time);
+
 % задание времени симуляции
 set_param(model, 'StopTime', string(sim_time));
 % задание частоты генератора
-set_param('Randles/Sine Wave', 'Frequency', int2str(gen_freq));
+set_param('Randles/Sine Wave', 'Frequency', string(gen_freq));
 
-disp('Simulation run.');
+disp('Simulation run...');
 out = sim(simIn);
 disp('Simulation sucsess.');
 
-y = transpose(out.simout.Data);
-x = transpose(out.simout.Time);
+Y = transpose(out.simout.Data);
+t = transpose(out.simout.Time);
 
-
-x_len = length(x);
-y_len = length(y);
-fprintf("x_len: %d\n", x_len);
-fprintf("y_len: %d\n", y_len);
-% for i = 1:x_len
-%     fprintf("x(%d) = %d\n", i, x(i+1)-x(i));
-% end
+t_len = length(t);
+Y_len = length(Y);
+fprintf("Кол-во сэмплов: %d\n", t_len);
+% fprintf("y_len: %d\n", Y_len);
 
 % Рассчёт БПФ
-fftx = fft(y);
-L = x_len; % общее кол-во захваченных сэмплов
-x_diff = diff(x); % разница времен м.у сэмплами
-Ts = mean(x_diff); % приод дискретизации
-Fs = 1/Ts; % частота дискретизации
-Yabs = abs(fftx); % массив модулей fft
+Y_fft = fft(Y);
+L = t_len;              % общее кол-во захваченных сэмплов
+x_diff = diff(t);       % разница времен м.у сэмплами
+Ts = mean(x_diff);      % приод дискретизации
+Fs = 1/Ts;              % частота дискретизации
+Yabs = abs(Y_fft);       % массив модулей fft
 freq_ax = Fs/L*(0:L-1); % частоты по оси x.
 
+% Поиск амплитуды сигнала
+for i = 1:1:L
+    if ((freq*0.9) < freq_ax(i)) && (freq_ax(i) < (freq*1.1))
+        result(cnt) = Y_fft(i);
+        frequencies(cnt) = freq_ax(i);
+        cnt = cnt + 1;
+        fprintf('Amplitude: %f\n', Yabs(i));
+        break
+    end 
+end % for freq = 1:1:L
+
+% Построение графиков
 tiledlayout(2,1);
 
 ax1 = nexttile;
@@ -54,28 +73,23 @@ grid on
 hold on
 
 ax0 = nexttile;
-plot(ax0, x, y);
+plot(ax0, t, Y);
 title(ax0, 'Original signal');
 xlabel('time');
 ylabel('Ampl');
 
-% ax2 = nexttile
-% plot(imag(fftx));
-% title(ax2, 'image');
-% xlabel('freq');
-% ylabel('imag');
-% 
-% ax3 = nexttile
-% plot(abs(fftx));
-% title(ax3, 'abs');
-% xlabel('freq');
-% ylabel('abs');
-% 
-% ax4 = nexttile
-% plot(angle(fftx));
-% title(ax4, 'angle');
-% xlabel('freq');
-% ylabel('angle');
-
 hold off
 % close_system(model); % закрывает симулинк
+end % for freq = 100:1000:100
+
+figure;
+ax_res = nexttile;
+% plot(ax_res, frequencies, imag(result), "LineWidth", 2);
+plot(ax_res, real(result), -imag(result), "LineWidth", 2);
+title(ax_res, 'Result');
+xlabel(ax_res, 'real(Z)');
+ylabel(ax_res, 'imag(Z)');
+grid on
+
+
+fprintf('Симуляция окончена!!!\n');
