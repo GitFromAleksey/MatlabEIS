@@ -4,20 +4,25 @@ clear
 model = "Randles";
 
 % load_system(model);
+open_system(model);
 simIn = Simulink.SimulationInput(model);
 
 % get_param('Randles/Sine Wave','dialogparameters') % получает все параметры компонента Step
-% Assuming 'MyModel/Step' is the path to your Step block
-% set_param('Randles/Step', 'StepTime', '1', 'InitialValue', '0', 'FinalValue', '5');
-set_param('Randles/Sine Wave', 'Frequency', '100');
+
+freq = 100; % частота в Гц
+gen_freq = freq*2*pi; % частота в рад/сек
+sim_time = 5*1/freq; % время симуляции 2 периода колебаний
+% задание времени симуляции
+set_param(model, 'StopTime', string(sim_time));
+% задание частоты генератора
+set_param('Randles/Sine Wave', 'Frequency', int2str(gen_freq));
 
 disp('Simulation run.');
 out = sim(simIn);
 disp('Simulation sucsess.');
 
-y = out.simout.Data;
-x = out.simout.Time;
-
+y = transpose(out.simout.Data);
+x = transpose(out.simout.Time);
 
 
 x_len = length(x);
@@ -28,39 +33,49 @@ fprintf("y_len: %d\n", y_len);
 %     fprintf("x(%d) = %d\n", i, x(i+1)-x(i));
 % end
 
-fftx = fft2(x);
+% Рассчёт БПФ
+fftx = fft(y);
+L = x_len; % общее кол-во захваченных сэмплов
+x_diff = diff(x); % разница времен м.у сэмплами
+Ts = mean(x_diff); % приод дискретизации
+Fs = 1/Ts; % частота дискретизации
+Yabs = abs(fftx); % массив модулей fft
+freq_ax = Fs/L*(0:L-1); % частоты по оси x.
 
-tiledlayout(5,1)
-ax1 = nexttile
-plot(ax1, x,y);
-title(ax1, 'x,y');
-xlabel('x');
-xlabel('y');
+tiledlayout(2,1);
+
+ax1 = nexttile;
+plot(ax1, freq_ax, Yabs, "LineWidth", 2);
+title(ax1, 'FFT');
+xlabel('f, Hz');
+ylabel('Amplitude');
+grid on
 
 hold on
-ax1 = nexttile
-plot(real(fftx));
-title(ax1, 'real');
-xlabel('freq');
-ylabel('real');
 
-ax2 = nexttile
-plot(imag(fftx));
-title(ax2, 'image');
-xlabel('freq');
-ylabel('imag');
+ax0 = nexttile;
+plot(ax0, x, y);
+title(ax0, 'Original signal');
+xlabel('time');
+ylabel('Ampl');
 
-ax3 = nexttile
-plot(abs(fftx));
-title(ax3, 'abs');
-xlabel('freq');
-ylabel('abs');
-
-ax4 = nexttile
-plot(angle(fftx));
-title(ax4, 'angle');
-xlabel('freq');
-ylabel('angle');
+% ax2 = nexttile
+% plot(imag(fftx));
+% title(ax2, 'image');
+% xlabel('freq');
+% ylabel('imag');
+% 
+% ax3 = nexttile
+% plot(abs(fftx));
+% title(ax3, 'abs');
+% xlabel('freq');
+% ylabel('abs');
+% 
+% ax4 = nexttile
+% plot(angle(fftx));
+% title(ax4, 'angle');
+% xlabel('freq');
+% ylabel('angle');
 
 hold off
 % close_system(model); % закрывает симулинк
