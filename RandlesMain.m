@@ -35,6 +35,7 @@ fprintf('Время симуляции: %f\n', sim_time);
 set_param(model, 'StopTime', string(sim_time));
 % задание частоты генератора
 set_param('Randles/Sine Wave', 'Frequency', string(gen_freq));
+set_param('Randles/Pulse Generator', 'Period', string(1/freq));
 
 disp('Simulation run...');
 out = sim(simIn);
