@@ -9,9 +9,9 @@ simIn = Simulink.SimulationInput(model);
 
 % get_param('Randles/Sine Wave','dialogparameters') % получает все параметры компонента Step
 
-freq_start = 1;
-freq_stop  = 10000;
-freq_step  = 200;
+freq_start = 50;
+freq_stop  = 2000;
+freq_step  = 100;
 
 arr_size = (freq_stop/freq_step); % рассчёт размера массива результатов измерения
 result = zeros(1, arr_size); % массив импедансов для ряда частот
@@ -23,11 +23,11 @@ if freq_start == 0 % защита от ввода нулевой частоты
 end
 
 % Цикл рассчёта импеданса
-for freq = freq_start : freq_step : freq_stop
+% for freq = freq_start : freq_step : freq_stop
 
-% freq_arr = freq_arr_gen(3,5);
-% for freq_idx = 1 : 1 : length(freq_arr)
-% freq = freq_arr(freq_idx);
+freq_arr = freq_arr_gen(10,4);
+for freq_idx = 1 : 1 : length(freq_arr)
+freq = freq_arr(freq_idx);
 
 % freq = 1000; % частота в Гц
 gen_freq = freq*2*pi; % частота в рад/сек
@@ -104,7 +104,7 @@ end % for freq = 100:1000:100
 figure;
 ax_res = nexttile;
 % График найквиста
-plot(ax_res, real(result), -imag(result), "LineWidth", 2);
+plot(ax_res, real(result), -imag(result), '-o', "LineWidth", 2);
 title(ax_res, 'Impedance Nyquist');
 xlabel(ax_res, 'real(Z)');
 ylabel(ax_res, '-imag(Z)');
