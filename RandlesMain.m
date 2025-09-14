@@ -11,7 +11,7 @@ simIn = Simulink.SimulationInput(model);
 
 freq_start = 1;
 freq_stop  = 10000;
-freq_step  = 10;
+freq_step  = 200;
 
 arr_size = (freq_stop/freq_step); % рассчёт размера массива результатов измерения
 result = zeros(1, arr_size); % массив импедансов для ряда частот
@@ -24,6 +24,10 @@ end
 
 % Цикл рассчёта импеданса
 for freq = freq_start : freq_step : freq_stop
+
+% freq_arr = freq_arr_gen(3,5);
+% for freq_idx = 1 : 1 : length(freq_arr)
+% freq = freq_arr(freq_idx);
 
 % freq = 1000; % частота в Гц
 gen_freq = freq*2*pi; % частота в рад/сек
