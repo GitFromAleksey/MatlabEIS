@@ -117,11 +117,12 @@ hold on
 loglog(ax_res1, frequencies, abs(result), "LineWidth", 2);
 loglog(ax_res1, frequencies, real(result), "LineWidth", 2);
 loglog(ax_res1, frequencies, imag(result), "LineWidth", 2);
+loglog(ax_res1, frequencies, angle(result), "LineWidth", 2);
 hold off
 title(ax_res1, 'Impedance log axies');
 xlabel(ax_res1, 'f, Hz');
 ylabel(ax_res1, 'Amplitude');
-legend(ax_res1, 'abs', 'real', 'imag');
+legend(ax_res1, 'abs', 'real', 'imag', 'angle');
 grid on
 
 
