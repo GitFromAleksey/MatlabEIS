@@ -1,0 +1,43 @@
+# KEIL files
+*.o
+*.d
+*.crf
+*.dep
+*.htm
+*.lnp
+*.lst
+*.map
+*.uvmpw.uvgui.*
+*.uvguix.*
+*.uvoptx
+*.axf
+*.hex
+/Debug/
+*.mk
+*.exe
+*.bak
+*.fed
+*.l2p
+*._2i
+*.__i
+*.bkp
+/Release/
+
+# Eclipse-specific files
+# .project
+# .cproject
+# .settings/
+.classpath
+
+# Build artifacts and executables
+*.obj
+*.so
+*.dll
+*.out
+Debug/
+Release/
+build/
+
+# Other temporary or generated files
+*.log
+*.tmp
