@@ -52,7 +52,16 @@ enum
   ADC_IN_1  = 1,
   ADC_DATA_BUF_SIZE
 };
+
+typedef struct
+{
+  uint16_t channels[ADC_DATA_BUF_SIZE];
+} adc_big_array_t;
+
+#define ADC_BIG_DATA_BUF_SIZE    30468u
+
 /*static*/ uint16_t AdcDmaDataBuf[ADC_DATA_BUF_SIZE];
+volatile adc_big_array_t AdcBigDataBuf[ADC_BIG_DATA_BUF_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
