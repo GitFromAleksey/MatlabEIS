@@ -22,7 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,23 +46,42 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 /* USER CODE BEGIN PV */
+#define ADC_BIG_DATA_BUF_SIZE    30000u // 30468u
+
+typedef enum
+{
+  MODE_PGM_START,
+  MODE_ADC_COLLECTING,
+  MODE_ADC_COLLECT_STOP,
+  MODE_USB_TX,
+  MODE_STOP
+} work_modes_t;
+
 // номера АЦП каналов в массиве AdcDmaDataBuf
 enum
 {
   ADC_IN_0 = 0,
-  ADC_IN_1  = 1,
+  ADC_IN_1 = 1,
   ADC_DATA_BUF_SIZE
 };
 
 typedef struct
 {
-  uint16_t channels[ADC_DATA_BUF_SIZE];
+  uint16_t data[ADC_DATA_BUF_SIZE];
+} adc_channels_array_t;
+
+// структура массива данных
+typedef struct
+{
+  adc_channels_array_t channels[ADC_BIG_DATA_BUF_SIZE];
+  uint32_t channel_index;
 } adc_big_array_t;
 
-#define ADC_BIG_DATA_BUF_SIZE    30468u
+work_modes_t WorkMode;
+uint32_t DataCollectTime;
+volatile adc_big_array_t AdcBigDataBuf;
 
-/*static*/ uint16_t AdcDmaDataBuf[ADC_DATA_BUF_SIZE];
-volatile adc_big_array_t AdcBigDataBuf[ADC_BIG_DATA_BUF_SIZE];
+bool DataCollecionIsStarted = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,9 +91,32 @@ static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 // ----------------------------------------------------------------------------
+// старт преобразования каналов АЦП
 void AdcStartConversion(void)
 {
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)AdcDmaDataBuf, ADC_DATA_BUF_SIZE);
+  uint32_t index = AdcBigDataBuf.channel_index;
+
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)AdcBigDataBuf.channels[index].data, ADC_DATA_BUF_SIZE);
+
+  AdcBigDataBuf.channel_index++;
+  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
+  {
+    DataCollectTime = HAL_GetTick() - DataCollectTime;
+    DataCollecionIsStarted = false;
+  }
+}
+// ----------------------------------------------------------------------------
+// запуск заполнения массива данными
+void StartDataCollection(void)
+{
+  if(DataCollecionIsStarted == true)
+    return;
+
+  DataCollecionIsStarted = true;
+  AdcBigDataBuf.channel_index = 0;
+
+  DataCollectTime = HAL_GetTick();
+  AdcStartConversion();
 }
 // ----------------------------------------------------------------------------
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
@@ -84,14 +127,15 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   HAL_ADC_Stop_DMA(&hadc1);
-  AdcStartConversion();
+  if(DataCollecionIsStarted)
+    AdcStartConversion();
 }
 // ----------------------------------------------------------------------------
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#define USB_TX_BUF_SIZE    100u
 /* USER CODE END 0 */
 
 /**
@@ -102,7 +146,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  char usb_tx_buf[USB_TX_BUF_SIZE];
+  uint32_t usb_tx_data_index;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -127,17 +172,54 @@ int main(void)
   MX_ADC1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-//  HAL_ADC_Start_IT(&hadc1);
-  AdcStartConversion();
+  WorkMode = MODE_PGM_START;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-    HAL_Delay(500);
-//    AdcStartConversion();
+//    StartDataCollection();
+//    HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
+//    HAL_Delay(2000);
+
+    switch(WorkMode)
+    {
+      case MODE_PGM_START:
+        StartDataCollection();
+        WorkMode = MODE_ADC_COLLECTING;
+        break;
+      case MODE_ADC_COLLECTING:
+        if(!DataCollecionIsStarted)
+          WorkMode = MODE_ADC_COLLECT_STOP;
+        break;
+      case MODE_ADC_COLLECT_STOP:
+        usb_tx_data_index = 0;
+        WorkMode = MODE_USB_TX;
+        break;
+      case MODE_USB_TX:
+        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
+                usb_tx_data_index,
+                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+        if( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) == USBD_OK)
+        {
+          usb_tx_data_index++;
+          if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
+          {
+            usb_tx_data_index = 0;
+            WorkMode = MODE_STOP;
+          }
+        }
+        break;
+      case MODE_STOP:
+
+        break;
+      default:
+        WorkMode = MODE_PGM_START;
+        break;
+    }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
