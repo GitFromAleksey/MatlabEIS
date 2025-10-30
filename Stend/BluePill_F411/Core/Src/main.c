@@ -47,7 +47,7 @@ DMA_HandleTypeDef hdma_adc1;
 
 /* USER CODE BEGIN PV */
 #define ADC_BIG_DATA_BUF_SIZE    30000u // 30468u
-
+extern USBD_HandleTypeDef hUsbDeviceFS;
 typedef enum
 {
   MODE_PGM_START,
@@ -79,6 +79,7 @@ typedef struct
 
 work_modes_t WorkMode;
 uint32_t DataCollectTime;
+volatile uint16_t DmaData[ADC_DATA_BUF_SIZE];
 volatile adc_big_array_t AdcBigDataBuf;
 
 bool DataCollecionIsStarted = false;
@@ -96,14 +97,15 @@ void AdcStartConversion(void)
 {
   uint32_t index = AdcBigDataBuf.channel_index;
 
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)AdcBigDataBuf.channels[index].data, ADC_DATA_BUF_SIZE);
+//  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)AdcBigDataBuf.channels[index].data, ADC_DATA_BUF_SIZE);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DmaData, ADC_DATA_BUF_SIZE);
 
-  AdcBigDataBuf.channel_index++;
-  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
-  {
-    DataCollectTime = HAL_GetTick() - DataCollectTime;
-    DataCollecionIsStarted = false;
-  }
+//  AdcBigDataBuf.channel_index++;
+//  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
+//  {
+//    DataCollectTime = HAL_GetTick() - DataCollectTime;
+//    DataCollecionIsStarted = false;
+//  }
 }
 // ----------------------------------------------------------------------------
 // запуск заполнения массива данными
@@ -126,9 +128,19 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 }
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-  HAL_ADC_Stop_DMA(&hadc1);
+//  HAL_ADC_Stop_DMA(&hadc1);
   if(DataCollecionIsStarted)
     AdcStartConversion();
+
+  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[0] = DmaData[0];
+  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[1] = DmaData[1];
+
+  AdcBigDataBuf.channel_index++;
+  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
+  {
+    DataCollectTime = HAL_GetTick() - DataCollectTime;
+    DataCollecionIsStarted = false;
+  }
 }
 // ----------------------------------------------------------------------------
 /* USER CODE END PFP */
@@ -209,6 +221,10 @@ int main(void)
           {
             usb_tx_data_index = 0;
             WorkMode = MODE_STOP;
+            USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+            while(hcdc->TxState != 0) {}
+            sprintf(usb_tx_buf, "---------------------------------------\r\n");
+            CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
           }
         }
         break;
