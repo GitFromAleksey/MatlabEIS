@@ -95,17 +95,7 @@ static void MX_ADC1_Init(void);
 // старт преобразования каналов АЦП
 void AdcStartConversion(void)
 {
-  uint32_t index = AdcBigDataBuf.channel_index;
-
-//  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)AdcBigDataBuf.channels[index].data, ADC_DATA_BUF_SIZE);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DmaData, ADC_DATA_BUF_SIZE);
-
-//  AdcBigDataBuf.channel_index++;
-//  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
-//  {
-//    DataCollectTime = HAL_GetTick() - DataCollectTime;
-//    DataCollecionIsStarted = false;
-//  }
 }
 // ----------------------------------------------------------------------------
 // запуск заполнения массива данными
@@ -121,11 +111,11 @@ void StartDataCollection(void)
   AdcStartConversion();
 }
 // ----------------------------------------------------------------------------
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
-{
-//  AdcStartConversion();
-  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
-}
+//void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
+//{
+////  AdcStartConversion();
+//  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+//}
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 //  HAL_ADC_Stop_DMA(&hadc1);
@@ -141,6 +131,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     DataCollectTime = HAL_GetTick() - DataCollectTime;
     DataCollecionIsStarted = false;
   }
+  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
 }
 // ----------------------------------------------------------------------------
 /* USER CODE END PFP */
