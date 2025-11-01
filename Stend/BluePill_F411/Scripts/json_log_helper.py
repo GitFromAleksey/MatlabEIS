@@ -23,7 +23,7 @@ class cJsonLogHelper:
         # делаем чтобы отсчёт времени был от нуля
         self.ShiftStartTimeStampToZero(data_tables)
 
-        self.AddDateTime(data_tables, date_time_start)
+        # self.AddDateTime(data_tables, date_time_start)
         # сохраняем таблицы в файл в json формате для удобства дальнейшей обработки
         self.out_file_name = file_name+'.tables'
         with open(self.out_file_name, 'wt') as f:
@@ -190,7 +190,7 @@ class cJsonLogHelper:
 
 def main():
     cJsonLogHelper(FILE_NAME, STARDATE_TIME)
-    input('Eny key to exit.')
+    # input('Eny key to exit.')
 
 if __name__ == '__main__':
     main()
