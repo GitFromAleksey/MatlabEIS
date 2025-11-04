@@ -1,10 +1,13 @@
 import json
 import numpy as np
+import matplotlib.pyplot as plt
 
-FILE = 'YAT-Log-1kHz.log.tables'
-SIGNAL_FREQ = 1000 # Hz
+FILE = 'YAT-Log-20kHz.log.tables'
+SIGNAL_FREQ = 20000 # Hz
 
 KEY_TIME_STAMP = 'TIME_STAMP'
+# 1000
+Fs = 87099.71 # Частота дискритизация
 
 def ConvertStrListToInt(data_str_list):
     data_int_list = [int(x) for x in data_str_list]
@@ -62,21 +65,47 @@ def main():
     ch0 = ConvertStrListToInt(table['Ch0'])
     ch1 = ConvertStrListToInt(table['Ch1'])
 
-    filtred_ch0 = FilterAver(ch0)
-    SaveDataTable(filtred_ch0, table[KEY_TIME_STAMP])
+    # filtred_ch0 = FilterAver(ch0)
+    # SaveDataTable(filtred_ch0, table[KEY_TIME_STAMP])
 
     half_periods, points_per_period = CalcSamplesPerPeriod(ch0)
     T = 1/SIGNAL_FREQ
-    Tc = T/points_per_period
-    Fc = 1/Tc
-    print(f'Freq: {SIGNAL_FREQ} - Частота сигнала,\nT: {T} - Период')
-    print(f'Tc: {Tc} - Период дискретизации,\nFc: {Fc} - Частота дискритизация')
+    Ts = 1/Fs
+    # Fs = 1/Ts
 
-    X = np.fft.fft(ch0)
-    N = len(ch0)
+    Ych0 = np.fft.fft(ch0)/len(ch0)
+    Ych1 = np.fft.fft(ch1)/len(ch1)
+    N = len(ch0) # общее кол-во сэмплов (sample_rate)
+    n = np.arange(N) # массив отсчётов
+    sample_duration = Ts * N
+    freq_ax = n/sample_duration # массив частот для оси частот
+    t = np.arange(0, sample_duration, Ts) # массив отсчётов времени каждого сэмпла
+    Ych0abs = np.abs(Ych0)
+    Ych0real = np.real(Ych0)
+    Ych0imag = np.imag(Ych0)
+    Ych0angle = np.angle(Ych0)
+    Ych1abs = np.abs(Ych1)
+    Ych1real = np.real(Ych1)
+    Ych1imag = np.imag(Ych1)
+    Ych1angle = np.angle(Ych1)
 
-    Xabs = np.abs(X)
+    offset_ch0 = Ych0real[0]
 
+    print(f'Freq: {SIGNAL_FREQ} - Частота сигнала [Гц],\nT: {T} - Период [сек]')
+    print(f'Tc: {Ts} - Период дискретизации [сек],\nFc: {Fs} - Частота дискритизация [Гц]')
+    print(f'Кол-во сэмплов: {N}')
+
+    xlimit = SIGNAL_FREQ # 1100
+
+    f = plt.figure()
+    f.canvas.manager.set_window_title('ABSOLUTE')
+    plt.stem(freq_ax, Ych0abs, linefmt='r-')
+    plt.stem(freq_ax, Ych1abs, linefmt='g-')
+    plt.grid(visible=True)
+    plt.xlim(0, xlimit*1.1)
+    # plt.xticks(np.arange(0,xlimit,1))
+
+    plt.show()
     pass
 
 if __name__ == '__main__':
