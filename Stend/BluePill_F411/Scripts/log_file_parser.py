@@ -10,7 +10,7 @@ DATE_TIME_STAMP = 'DATE_TIME'
 DATE_TIME_FORMAT = '%d.%m.%YT%H:%M:%S'
 STARDATE_TIME = datetime.strptime('21.02.2025T17:28:10', DATE_TIME_FORMAT)
 
-class cJsonLogHelper:
+class cLogFileParser:
 
     KEY_TIME_STAMP = 'TIME_STAMP'
 
@@ -21,14 +21,15 @@ class cJsonLogHelper:
         for table in data_tables:
             self.TimeStampSequenceFilter(table)
         # делаем чтобы отсчёт времени был от нуля
-        self.ShiftStartTimeStampToZero(data_tables)
+        # self.ShiftStartTimeStampToZero(data_tables)
 
-        # self.AddDateTime(data_tables, date_time_start)
+        self.parse_result = data_tables
+
         # сохраняем таблицы в файл в json формате для удобства дальнейшей обработки
-        self.out_file_name = file_name+'.tables'
-        with open(self.out_file_name, 'wt') as f:
-            d = json.dumps(data_tables, indent=2)
-            f.write(d)
+        # self.out_file_name = file_name+'.tables'
+        # with open(self.out_file_name, 'wt') as f:
+        #     d = json.dumps(data_tables, indent=2)
+        #     f.write(d)
 
 
     def ReadFromLogFile(self, file_name: str = '') -> list[str]:
@@ -69,7 +70,7 @@ class cJsonLogHelper:
         # DATE_TIME_STAMP
         
         
-        time_stamp_key = cJsonLogHelper.KEY_TIME_STAMP
+        time_stamp_key = cLogFileParser.KEY_TIME_STAMP
         for table in data_tables:
             real_time_list = []
             for time_stamp in table[time_stamp_key]:
@@ -84,7 +85,7 @@ class cJsonLogHelper:
     def ShiftStartTimeStampToZero(self, data_tables):
         # поиск наименьшего значения TIME_STAMP от которого будет отсчёт
         time_stamp_min = None
-        time_stamp_key = cJsonLogHelper.KEY_TIME_STAMP
+        time_stamp_key = cLogFileParser.KEY_TIME_STAMP
         for table in data_tables:
             time_stamp_0 = int(table[time_stamp_key][0])
             if time_stamp_min == None:
@@ -124,7 +125,7 @@ class cJsonLogHelper:
     def TimeStampSequenceFilter(self, table):
         ''' фильтр на последовательность меток времени '''
         index = 0
-        time_stamps = table[cJsonLogHelper.KEY_TIME_STAMP]
+        time_stamps = table[cLogFileParser.KEY_TIME_STAMP]
         prev_t_st = 0
         for t_st in time_stamps:
             if (int(t_st) < prev_t_st): # если веремя меньше чем предыдущее
@@ -164,9 +165,9 @@ class cJsonLogHelper:
         for table in data_tables:
             data_for_plot = { key_x: None, key_y: None, key_y_label: None }
             for key in table.keys():
-                if key == cJsonLogHelper.KEY_TIME_STAMP:
+                if key == cLogFileParser.KEY_TIME_STAMP:
                     self.TimeStampSequenceFilter(table)
-                    x = [int(strValue) for strValue in table[cJsonLogHelper.KEY_TIME_STAMP]]
+                    x = [int(strValue) for strValue in table[cLogFileParser.KEY_TIME_STAMP]]
                     data_for_plot[key_x] = x
                 else:
                     if self.CheckDataIsANumber(table[key]):
@@ -189,7 +190,7 @@ class cJsonLogHelper:
 
 
 def main():
-    cJsonLogHelper(FILE_NAME, STARDATE_TIME)
+    cLogFileParser(FILE_NAME, STARDATE_TIME)
     # input('Eny key to exit.')
 
 if __name__ == '__main__':
