@@ -22,6 +22,21 @@ def SaveDataTable(data, time_stamp):
     json.dump([data_to_save], fp=f, indent=2)
     f.close()
 
+def FftCalc(samples, signal_freq, Fs):
+    T = 1/SIGNAL_FREQ # период оцифрованного сигнала
+    Ts = 1/Fs # период сэмплирования
+    Y = np.fft.fft(samples)/len(samples)
+    N = len(samples) # общее кол-во сэмплов (sample_rate)
+    n = np.arange(N) # массив отсчётов
+    sample_duration = Ts * N
+    freq_ax = n/sample_duration # массив частот для оси частот
+    t = np.arange(0, sample_duration, Ts) # массив отсчётов времени каждого сэмпла
+    Ych0abs = np.abs(Y)
+    Ych0real = np.real(Y)
+    Ych0imag = np.imag(Y)
+    Ych0angle = np.angle(Y)
+    offset_ch0 = Ych0real[0] # постоянная составляющая
+
 def main():
 
     f = open(FILE, 'rt', encoding='utf-8')
@@ -32,9 +47,10 @@ def main():
     f.close()
 
     for data in data_collection:
-        print(f'Signal freq: {data[KEY_FREQ]}, Hz')
+        signal_freq = data[KEY_FREQ]
+        print(f'Signal freq: {signal_freq}, Hz')
         samples = data[KEY_DATA]
-
+        FftCalc(samples['Ch0'], signal_freq, Fs)
 
 
 if __name__ == '__main__':

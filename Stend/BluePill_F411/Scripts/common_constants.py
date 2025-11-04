@@ -1,4 +1,4 @@
-
+Fs = 87099.71 # Частота дискритизация
 KEY_TIME_STAMP = 'TIME_STAMP'
 KEY_FREQ = 'FREQ'
 KEY_DATA = 'DATA'
