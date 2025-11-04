@@ -2,6 +2,7 @@ import os
 import re
 import datetime
 import json
+from common_constants import *
 from log_file_parser import cLogFileParser
 
 LOGS_FOLDER = 'Эксперимент_18.19.01_04.10.2025'
@@ -44,8 +45,8 @@ def main():
     experiment_name, date_time = res
     date_time_str = date_time.strftime('%d.%m.%YT%H.%M.%S') # 04.02.2025T18:21:00
 
+    file_content = {KEY_EXPERIMENT_NAME: experiment_name, KEY_EXPERIMENT_DATE: date_time_str}
     parsed_data = []
-    parsed_data.append({'EXPERIMENT_NAME': experiment_name, 'EXPERIMENT_DATE': date_time_str})
     log_files = os.listdir(logs_folder)
     for log_name in log_files:
         print(f'Parse log file: {log_name}')
@@ -54,16 +55,18 @@ def main():
         print(f'Signal frequency: {freq}')
         helper = cLogFileParser(logs_folder+'/'+log_name)
         data = helper.parse_result
-        file_data['FREQ'] = freq
-        file_data['DATA'] = data
+        file_data[KEY_FREQ] = freq
+        file_data[KEY_DATA] = data
         parsed_data.append(file_data)
+
+    file_content[KEY_PARSED_DATA] = parsed_data
 
     print(f'Save parsing result...')
     
     parse_result_file_name = experiment_name+'_'+date_time_str+'.result'
     print(f'Save parsing file: {parse_result_file_name}')
     with open(parse_result_file_name, 'wt', encoding='utf-8') as f:
-        json.dump(parsed_data, f, indent=1)
+        json.dump(file_content, f, indent=1)
         f.close()
 
 
