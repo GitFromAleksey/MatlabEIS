@@ -19,10 +19,15 @@ def FindSignalValueInFft(signal_freq, fft_spectrum, freq_ax):
     # поиск индекса частоты на оси частот
     for f in freq_ax:
         # поиск заданной частоты на оси частот
-        if f > signal_freq-2 and f < signal_freq+2:
-            srez = fft_spectrum[index-5:index+5]
-            print(f'FindFreqAmpInFft: {f}, Amplitude: {abs(max(srez))}')
-            return max(srez)
+        if f > signal_freq and f < signal_freq*1.1:
+            start_index = int(index*0.9)
+            stop_index = int(index*1.1)
+            srez = fft_spectrum[start_index : stop_index]
+            for s in srez:
+                if int(abs(s)) == int(max(abs(srez))):
+                    print(f'FindFreq: {f} Hz, Amplitude: {abs(s)}, maxcplx: {s}')
+                    print(f'start_freq: {freq_ax[start_index]}, stop_freq: {freq_ax[stop_index]}')
+                    return s
         index += 1   
 
 def FftCalc(samples, signal_freq, Fs):
@@ -89,6 +94,17 @@ def main():
         ch0_ampl_val = abs(ch0_compl_val)
         ch1_ampl_val = abs(ch1_compl_val)
 
+        # отображение графика спектра для контроля
+        # fig, ax = plt.subplots()
+        # ax.set_title(f'Frequency: {signal_freq} Hz')
+        # ax.set_ylabel('amplitude')
+        # ax.set_xlabel('frequency')
+        # ax.grid(True)
+        # ax.stem(freq_ax_ch0, abs(Ych0), label='abs_ch0', linefmt='r-')
+        # ax.stem(freq_ax_ch1, abs(Ych1), label='abs_ch1', linefmt='g-')
+        # plt.legend()
+        # plt.show()
+
         # добавление вычисленных данных в структуру для дальнейшего сохранение в файл
         fft_result = {}
         fft_result[KEY_FREQ] = signal_freq
@@ -102,8 +118,8 @@ def main():
         ch0_results[KEY_SIGNAL_X_AX]   = freq_ax_ch0
 
         ch1_results = {}
-        ch0_results[KEY_SIGNAL_ABS_VAL]     = ch1_ampl_val
-        ch0_results[KEY_SIGNAL_COMPLEX_VAL] = ch1_compl_val
+        ch1_results[KEY_SIGNAL_ABS_VAL]     = ch1_ampl_val
+        ch1_results[KEY_SIGNAL_COMPLEX_VAL] = ch1_compl_val
         ch1_results[KEY_SIGNAL_OFFSET] = signal_offset_ch1
         ch1_results[KEY_SIGNAL_FFT]    = Ych1
         ch1_results[KEY_SIGNAL_X_AX]   = freq_ax_ch1
