@@ -1,4 +1,5 @@
 import json
+import cmath
 import numpy as np
 import matplotlib.pyplot as plt
 from common_constants import *
@@ -29,9 +30,13 @@ def main():
         ch1_data = data[KEY_CHANNEL1]
 
         channel_0[KEY_SIGNAL_ABS_VAL] = ch0_data[KEY_SIGNAL_ABS_VAL]
-        channel_0[KEY_SIGNAL_COMPLEX_VAL] = ListToComplexNumber(ch0_data[KEY_SIGNAL_COMPLEX_VAL])
+        ch0cplx = ListToComplexNumber(ch0_data[KEY_SIGNAL_COMPLEX_VAL])
+        ch0phi = np.angle(ch0cplx)
+        channel_0[KEY_SIGNAL_COMPLEX_VAL] = cmath.rect(abs(ch0cplx), 0) # сдвижка фазы 1-го канала в 0
         channel_1[KEY_SIGNAL_ABS_VAL] = ch1_data[KEY_SIGNAL_ABS_VAL]
-        channel_1[KEY_SIGNAL_COMPLEX_VAL] = ListToComplexNumber(ch1_data[KEY_SIGNAL_COMPLEX_VAL])
+        ch1cplx = ListToComplexNumber(ch1_data[KEY_SIGNAL_COMPLEX_VAL])
+        ch1phi = np.angle(ch1cplx)
+        channel_1[KEY_SIGNAL_COMPLEX_VAL] = cmath.rect(abs(ch0cplx), ch1phi-ch0phi) # сдвижка фазы 2-го канала относительно 1-го 
 
         ch0_data_list.append(channel_0[KEY_SIGNAL_COMPLEX_VAL])
         ch1_data_list.append(channel_1[KEY_SIGNAL_COMPLEX_VAL])
@@ -72,7 +77,7 @@ def main():
         _angle_1.append(np.angle(vals[1]))
 
         eis_abs.append(np.abs(vals[0]-vals[1]))
-        eis_image.append(np.imag(vals[0]-vals[1]))
+        eis_image.append(-np.imag(vals[0]-vals[1]))
         eis_real.append(np.real(vals[0]-vals[1]))
         eis_angle.append(np.angle(vals[0]-vals[1]))
 
@@ -107,7 +112,7 @@ def main():
     ax.grid(True)
 
     ax.plot(_image_0, _real_0, label='EIS_0')
-    ax.plot(_image_1, _real_1, label='EIS_1')
+    ax.plot(_image_1, _real_1, label='EIS_1') # как буд-то это и есть график EIS
     ax.plot(eis_image, eis_real, label='EIS')
     plt.legend()
 

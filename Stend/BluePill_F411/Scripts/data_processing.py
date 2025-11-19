@@ -83,9 +83,20 @@ def main():
         samples = data[KEY_DATA][0]
         del samples[KEY_TIME_STAMP] # таймштамп нам больше не нужен
 
+        # перевод данных в относительные единицы
+        ch0_samples = []
+        for smpl in samples[KEY_CHANNEL0]:
+            ch0_samples.append(smpl/ADC_SCALE)
+        ch1_samples = []
+        for smpl in samples[KEY_CHANNEL1]:
+            ch1_samples.append(smpl/ADC_SCALE)
+
         # вычисление ДПФ
         Ych0, freq_ax_ch0, signal_offset_ch0 = FftCalc(samples[KEY_CHANNEL0], signal_freq, Fs)
         Ych1, freq_ax_ch1, signal_offset_ch1 = FftCalc(samples[KEY_CHANNEL1], signal_freq, Fs)
+        # Ych0, freq_ax_ch0, signal_offset_ch0 = FftCalc(ch0_samples, signal_freq, Fs)
+        # Ych1, freq_ax_ch1, signal_offset_ch1 = FftCalc(ch1_samples, signal_freq, Fs)
+
 
         # комплексное значение сигнала в спектре для его частоты
         ch0_compl_val = FindSignalValueInFft(signal_freq, Ych0, freq_ax_ch0)

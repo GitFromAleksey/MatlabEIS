@@ -1,4 +1,5 @@
 Fs = 87099.71 # Частота дискритизация
+ADC_SCALE = 4096 # разрядность АЦП
 KEY_TIME_STAMP = 'TIME_STAMP'
 
 KEY_CHANNEL0 = 'Ch0'
