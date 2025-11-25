@@ -46,7 +46,7 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 /* USER CODE BEGIN PV */
-#define ADC_BIG_DATA_BUF_SIZE    30000u // 30468u
+#define ADC_BIG_DATA_BUF_SIZE    3000u // 30468u
 extern USBD_HandleTypeDef hUsbDeviceFS;
 typedef enum
 {
@@ -189,8 +189,14 @@ int main(void)
     switch(WorkMode)
     {
       case MODE_PGM_START:
-        StartDataCollection();
-        WorkMode = MODE_ADC_COLLECTING;
+        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+        if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
+        {
+          HAL_Delay(1);
+          StartDataCollection();
+          WorkMode = MODE_ADC_COLLECTING;
+          HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+        }
         break;
       case MODE_ADC_COLLECTING:
         if(!DataCollecionIsStarted)
@@ -199,6 +205,7 @@ int main(void)
       case MODE_ADC_COLLECT_STOP:
         usb_tx_data_index = 0;
         WorkMode = MODE_USB_TX;
+        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
         break;
       case MODE_USB_TX:
         sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
@@ -220,7 +227,7 @@ int main(void)
         }
         break;
       case MODE_STOP:
-
+        WorkMode = MODE_PGM_START;
         break;
       default:
         WorkMode = MODE_PGM_START;
@@ -318,7 +325,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -328,7 +335,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -385,6 +392,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : KEY_Pin */
+  GPIO_InitStruct.Pin = KEY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(KEY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA9 */
   GPIO_InitStruct.Pin = GPIO_PIN_9;
