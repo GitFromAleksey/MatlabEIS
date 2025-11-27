@@ -46,7 +46,7 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 /* USER CODE BEGIN PV */
-#define ADC_BIG_DATA_BUF_SIZE    3000u // 30468u
+#define ADC_BIG_DATA_BUF_SIZE    1742u // 30468u
 extern USBD_HandleTypeDef hUsbDeviceFS;
 typedef enum
 {
