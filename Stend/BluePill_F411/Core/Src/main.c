@@ -49,7 +49,7 @@ DMA_HandleTypeDef hdma_adc1;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-#define AMPLITUDE   24.00 // Volt
+#define AMPLITUDE   3.30 // Volt
 #define FREQ_START  100
 #define FREQ_STOP   20000
 #define FREQ_STEP   100
@@ -147,16 +147,25 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 void UartSendData(uint8_t *data, uint16_t len)
 {
   HAL_UART_Transmit(&huart1, data, len, 100);
+  HAL_Delay(200);
 }
 // ----------------------------------------------------------------------------
-void GgsGenSetup(void)
+void DdsGenSetup(void)
 {
   t_dds_init init;
 
   init.send_data = UartSendData;
 
   DdsInit(&init);
+
+  DdsChannelOff(DDS_CHANNEL_1);
+  DdsChannelOff(DDS_CHANNEL_2);
+  DdsChannelOff(DDS_CHANNEL_3);
 }
+// ----------------------------------------------------------------------------
+void LedSwitch(bool on)
+{ HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, (on)?(GPIO_PIN_RESET):(GPIO_PIN_SET)); }
+// ----------------------------------------------------------------------------
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -200,58 +209,53 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  GgsGenSetup();
+  DdsGenSetup();
+
   WorkMode = MODE_PGM_START;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  while(1)
   {
-//    StartDataCollection();
-//    HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-//    HAL_Delay(2000);
-
     switch(WorkMode)
     {
       case MODE_PGM_START:
-        DdsChannelOn(DDS_CHANNEL_1);
-        HAL_Delay(1000);
-        DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
-        DdsChannelSetFreq(DDS_CHANNEL_1, freq);
-        WorkMode = MODE_DDS_ON;
-        break;
-      case MODE_DDS_ON:
-        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+        LedSwitch(true);
         if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
         {
-          HAL_Delay(1);
-          StartDataCollection();
-          WorkMode = MODE_ADC_COLLECTING;
-          HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+          LedSwitch(false);
+          HAL_Delay(500);
+          WorkMode = MODE_DDS_ON;
         }
+        break;
+      case MODE_DDS_ON:
+          DdsChannelOn(DDS_CHANNEL_1);
+          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
+          DdsChannelSetFreq(DDS_CHANNEL_1, freq);
+
+          HAL_Delay(100); // ждём чтобы генератор нормально включился
+          StartDataCollection();
+          LedSwitch(false);
+          WorkMode = MODE_ADC_COLLECTING;
         break;
       case MODE_ADC_COLLECTING:
         if(!DataCollecionIsStarted)
         {
           DdsChannelOff(DDS_CHANNEL_1);
-
-          if(freq <= FREQ_STOP)
-            freq += FREQ_STEP;
-          else
-            freq = FREQ_START;
-
           WorkMode = MODE_ADC_COLLECT_STOP;
         }
         break;
       case MODE_ADC_COLLECT_STOP:
         usb_tx_data_index = 0;
+        LedSwitch(false); // HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
         WorkMode = MODE_USB_TX;
-        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
         break;
       case MODE_USB_TX:
-        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
+        LedSwitch(true);
+        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"freq\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
                 usb_tx_data_index,
+                freq,
                 AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
                 AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
         if( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) == USBD_OK)
@@ -260,11 +264,22 @@ int main(void)
           if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
           {
             usb_tx_data_index = 0;
-            WorkMode = MODE_STOP;
+
             USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
             while(hcdc->TxState != 0) {}
             sprintf(usb_tx_buf, "---------------------------------------\r\n");
             CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
+
+            if(freq < FREQ_STOP)
+            {
+              freq += FREQ_STEP;
+              WorkMode = MODE_DDS_ON;
+            }
+            else
+            {
+              freq = FREQ_START;
+              WorkMode = MODE_STOP;
+            }
           }
         }
         break;
