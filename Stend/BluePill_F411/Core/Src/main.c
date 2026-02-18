@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include "usbd_cdc_if.h"
+#include "../../DDS/dds.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,12 +46,20 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+UART_HandleTypeDef huart1;
+
 /* USER CODE BEGIN PV */
+#define AMPLITUDE   3.30 // Volt
+#define FREQ_START  100
+#define FREQ_STOP   20000
+#define FREQ_STEP   100
+
 #define ADC_BIG_DATA_BUF_SIZE    1742u // 30468u
 extern USBD_HandleTypeDef hUsbDeviceFS;
 typedef enum
 {
   MODE_PGM_START,
+  MODE_DDS_ON,
   MODE_ADC_COLLECTING,
   MODE_ADC_COLLECT_STOP,
   MODE_USB_TX,
@@ -90,6 +99,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 // ----------------------------------------------------------------------------
 // старт преобразования каналов АЦП
@@ -134,6 +144,28 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
 }
 // ----------------------------------------------------------------------------
+void UartSendData(uint8_t *data, uint16_t len)
+{
+  HAL_UART_Transmit(&huart1, data, len, 100);
+  HAL_Delay(200);
+}
+// ----------------------------------------------------------------------------
+void DdsGenSetup(void)
+{
+  t_dds_init init;
+
+  init.send_data = UartSendData;
+
+  DdsInit(&init);
+
+  DdsChannelOff(DDS_CHANNEL_1);
+  DdsChannelOff(DDS_CHANNEL_2);
+  DdsChannelOff(DDS_CHANNEL_3);
+}
+// ----------------------------------------------------------------------------
+void LedSwitch(bool on)
+{ HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, (on)?(GPIO_PIN_RESET):(GPIO_PIN_SET)); }
+// ----------------------------------------------------------------------------
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -151,6 +183,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   char usb_tx_buf[USB_TX_BUF_SIZE];
   uint32_t usb_tx_data_index;
+  uint32_t freq = FREQ_START;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -174,42 +207,55 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_USB_DEVICE_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  DdsGenSetup();
+
   WorkMode = MODE_PGM_START;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  while(1)
   {
-//    StartDataCollection();
-//    HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-//    HAL_Delay(2000);
-
     switch(WorkMode)
     {
       case MODE_PGM_START:
-        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+        LedSwitch(true);
         if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
         {
-          HAL_Delay(1);
-          StartDataCollection();
-          WorkMode = MODE_ADC_COLLECTING;
-          HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+          LedSwitch(false);
+          HAL_Delay(500);
+          WorkMode = MODE_DDS_ON;
         }
+        break;
+      case MODE_DDS_ON:
+          DdsChannelOn(DDS_CHANNEL_1);
+          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
+          DdsChannelSetFreq(DDS_CHANNEL_1, freq);
+
+          HAL_Delay(100); // ждём чтобы генератор нормально включился
+          StartDataCollection();
+          LedSwitch(false);
+          WorkMode = MODE_ADC_COLLECTING;
         break;
       case MODE_ADC_COLLECTING:
         if(!DataCollecionIsStarted)
+        {
+          DdsChannelOff(DDS_CHANNEL_1);
           WorkMode = MODE_ADC_COLLECT_STOP;
+        }
         break;
       case MODE_ADC_COLLECT_STOP:
         usb_tx_data_index = 0;
+        LedSwitch(false); // HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
         WorkMode = MODE_USB_TX;
-        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
         break;
       case MODE_USB_TX:
-        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
+        LedSwitch(true);
+        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"freq\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
                 usb_tx_data_index,
+                freq,
                 AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
                 AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
         if( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) == USBD_OK)
@@ -218,11 +264,22 @@ int main(void)
           if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
           {
             usb_tx_data_index = 0;
-            WorkMode = MODE_STOP;
+
             USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
             while(hcdc->TxState != 0) {}
             sprintf(usb_tx_buf, "---------------------------------------\r\n");
             CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
+
+            if(freq < FREQ_STOP)
+            {
+              freq += FREQ_STEP;
+              WorkMode = MODE_DDS_ON;
+            }
+            else
+            {
+              freq = FREQ_START;
+              WorkMode = MODE_STOP;
+            }
           }
         }
         break;
@@ -348,6 +405,39 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -379,6 +469,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
