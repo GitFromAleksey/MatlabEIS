@@ -132,11 +132,13 @@ class Parser:
             fig, ax = plt.subplots()
             ax.set_title(f'freq: {freq}')
             # ax.set_ylim(ymin=0, ymax=y.max()+y.max()/10)
-            ax.plot(time, volt, linewidth=1.0)
-            ax.plot(time, current, linewidth=1.0)
+            ax.plot(time, volt, linewidth=1.0, label='volt')
+            ax.plot(time, current, linewidth=1.0, label='current')
             ax.set_ylabel('volt')
             ax.set_xlabel('time')
             ax.grid(True)
+            ax.legend()
+            # plt.legend()
             plt.show()
 
 commands = [ 'f - file_name', 'p - plot', 's - save file', 'q - exit']
