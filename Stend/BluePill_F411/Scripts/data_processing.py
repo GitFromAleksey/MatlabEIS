@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from common_constants import *
 
-FILE = 'Эксперимент_04.10.2025T18.19.01.result'
-SIGNAL_FREQ = 20000 # Hz
+FILE = '5_YAT-Log-20260219-102159_10.28.31_19.02.2026.result'
+# SIGNAL_FREQ = 20000 # Hz
 
 # 1000
 Fs = 87099.71 # Частота дискритизация-
@@ -12,6 +12,34 @@ Fs = 87099.71 # Частота дискритизация-
 def ConvertStrListToInt(data_str_list):
     data_int_list = [int(x) for x in data_str_list]
     return data_int_list
+
+def FindMaxAmplitudeAndItsFrequency(fft_spectrum, freq_ax):
+    ''' Ищет максимальную амплитуду и её частоту на спектре fft '''
+    # срез амплитуд половины спектра без постоянной составляющей
+    spectr   = list(abs(fft_spectrum[1 : int(len(fft_spectrum)/2)]))
+    # поиск максимального значения амплитуды
+    max_ampl = max(spectr)
+    # определение индекса максимального значения амплитуды
+    index    = spectr.index(max_ampl)
+    # определение частоты сигнала по найденому индексу
+    freq     = freq_ax[index+1]
+    fft_max_ampl = fft_spectrum[index+1]
+    return fft_max_ampl, max_ampl, freq
+
+def _FindSignalValueInFft(signal_freq, fft_spectrum, freq_ax):
+    '''  '''
+    # срез половины спектра без постоянной составляющей
+    # spectr   = list(abs(fft_spectrum[1 : int(len(fft_spectrum)/2)]))
+    # max_ampl = max(spectr) # поиск максимального значения
+    # index    = spectr.index(max_ampl) # индекс максимального значения
+    # freq     = freq_ax[index+1] # определение частоты по индексу
+
+    fft_max_ampl, max_ampl, freq = FindMaxAmplitudeAndItsFrequency(fft_spectrum, freq_ax)
+
+    # проверка совпадения найденой частоты
+    if freq > (signal_freq*0.9) and freq < (signal_freq*1.1):
+        return fft_max_ampl # fft_spectrum[index+1]
+    return None
 
 def FindSignalValueInFft(signal_freq, fft_spectrum, freq_ax):
     ''' Ищет в спектре амплитуду для определённой частоты '''
@@ -94,27 +122,32 @@ def main():
         # вычисление ДПФ
         Ych0, freq_ax_ch0, signal_offset_ch0 = FftCalc(samples[KEY_CHANNEL0], signal_freq, Fs)
         Ych1, freq_ax_ch1, signal_offset_ch1 = FftCalc(samples[KEY_CHANNEL1], signal_freq, Fs)
-        # Ych0, freq_ax_ch0, signal_offset_ch0 = FftCalc(ch0_samples, signal_freq, Fs)
-        # Ych1, freq_ax_ch1, signal_offset_ch1 = FftCalc(ch1_samples, signal_freq, Fs)
 
+        # поиск комплексного значения амплитуды сигнала в спектре для его частоты
+        ch0_compl_val = _FindSignalValueInFft(signal_freq, Ych0, freq_ax_ch0)
+        ch1_compl_val = _FindSignalValueInFft(signal_freq, Ych1, freq_ax_ch1)
+        # ch0_compl_val = FindSignalValueInFft(signal_freq, Ych0, freq_ax_ch0)
+        # ch1_compl_val = FindSignalValueInFft(signal_freq, Ych1, freq_ax_ch1)
 
-        # комплексное значение сигнала в спектре для его частоты
-        ch0_compl_val = FindSignalValueInFft(signal_freq, Ych0, freq_ax_ch0)
-        ch1_compl_val = FindSignalValueInFft(signal_freq, Ych1, freq_ax_ch1)
+        # отображение графика спектра для контроля при ошибке
+        if ch0_compl_val == None or ch1_compl_val == None:
+            fig, (ax, ax1) = plt.subplots(2, 1)
+            ax.set_title(f'Частота: {signal_freq} Hz не совпадает.')
+            ax.set_ylabel('amplitude')
+            ax.set_xlabel('frequency')
+            ax.grid(True)
+            ax.stem(freq_ax_ch0, abs(Ych0), label='abs_ch0', linefmt='r-')
+            ax.stem(freq_ax_ch1, abs(Ych1), label='abs_ch1', linefmt='g-')
+            ax.legend()
+            ax1.plot(samples[KEY_CHANNEL0], label='abs_ch0')
+            ax1.plot(samples[KEY_CHANNEL1], label='abs_ch1')
+            ax1.legend()
+            plt.show()
+            continue
+
         # амплитудное значение сигнала в спектре для его частоты
         ch0_ampl_val = abs(ch0_compl_val)
         ch1_ampl_val = abs(ch1_compl_val)
-
-        # отображение графика спектра для контроля
-        # fig, ax = plt.subplots()
-        # ax.set_title(f'Frequency: {signal_freq} Hz')
-        # ax.set_ylabel('amplitude')
-        # ax.set_xlabel('frequency')
-        # ax.grid(True)
-        # ax.stem(freq_ax_ch0, abs(Ych0), label='abs_ch0', linefmt='r-')
-        # ax.stem(freq_ax_ch1, abs(Ych1), label='abs_ch1', linefmt='g-')
-        # plt.legend()
-        # plt.show()
 
         # добавление вычисленных данных в структуру для дальнейшего сохранение в файл
         fft_result = {}
@@ -139,11 +172,12 @@ def main():
         fft_result[KEY_CHANNEL1] = ch1_results
         fft_results.append(fft_result)
  
-    print(f'Сохранение результатов в файл...')
-    f = open(FILE+'.fft', 'wt')
+    output_file = FILE+'.fft'
+    print(f'Сохранение результатов в файл: {output_file}...')
+    f = open(output_file, 'wt')
     json.dump(fft_results, fp=f, indent=0, cls=NumpyEncoder)
     f.close()
-    pass
+    print(f'Сохранение завершено.')
 
 if __name__ == '__main__':
     main()
