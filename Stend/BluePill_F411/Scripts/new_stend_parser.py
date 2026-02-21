@@ -45,7 +45,7 @@ class Parser:
             return False
         self.file_path = file_path
         p = Path(file_path)
-        self.abs_path = p.parent._str
+        self.abs_path = str(p.parent) # p.parent._str
         self.mod_time = os.path.getmtime(file_path)
         self.mod_time = datetime.datetime.fromtimestamp(self.mod_time).strftime('%H.%M.%S_%d.%m.%Y')
         self.file_name_with_ext = Path(file_path).name
