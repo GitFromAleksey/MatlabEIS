@@ -4,6 +4,7 @@ import json
 import cmath
 from pathlib import Path
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from common_constants import *
 
@@ -155,15 +156,18 @@ class FftResultFile:
             real.append(e.real)
             imag.append(-e.imag)
 
+        mpl.rcParams['savefig.directory'] = '.'
         fig, ax = plt.subplots()
 
-        ax.set_title('chanel_0')
-        ax.set_ylabel('amplitude')
-        ax.set_xlabel('frequency')
+        ax.set_title('Nyquist plot')
+        ax.set_ylabel('image')
+        ax.set_xlabel('real')
         ax.grid(True)
+        ax.set_xlim(-1, 1.5)
+        ax.set_ylim(-1, 1.5)
         for e, f in zip(eis, freqs):
-            ax.text(e.real, -e.imag, str(f))
-        ax.scatter(real, imag, label='EIS')
+            ax.text(e.real, -e.imag, str(f), fontsize=6)
+        ax.scatter(real, imag)
         ax.plot(real, imag, '-r', label='EIS')
         plt.legend()
         plt.show()
