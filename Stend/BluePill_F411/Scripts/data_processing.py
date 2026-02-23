@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from common_constants import *
 
-FILE = '5_YAT-Log-20260219-102159_10.28.31_19.02.2026.result'
+FILE = '5_battery_10.28.31_19.02.2026.result'
 # SIGNAL_FREQ = 20000 # Hz
 
 # 1000
