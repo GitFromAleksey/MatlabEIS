@@ -1,5 +1,5 @@
 import os
-# import sys # import argparse # 
+import sys # import argparse # 
 import json
 import cmath
 from pathlib import Path
@@ -8,7 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from common_constants import *
 
-FILE = 'YATLog0_19.11.2025T17.48.00.result.fft'
+FILE = '5_battery_10.28.31_19.02.2026.result.fft'
 
 def ListToComplexNumber(complex_number_list):
     real = complex_number_list[0]
@@ -26,6 +26,9 @@ class Signal:
         self.fft_list          = Signal.NumListToComplexNumbersList(fft_data[KEY_SIGNAL_FFT]) # fft сигнала
         self.freq_axis_list    = fft_data[KEY_SIGNAL_X_AX] # ось частот сигнала
 
+    def GetFrequency(self):
+        return self.freq
+
     def GetRawSamlpes(self):
         ''' возвращает сырые отсчёты исходного сигнала '''
         return self.raw_samples_list
@@ -33,7 +36,11 @@ class Signal:
     def GetAbsFftForPlot(self):
         ''' возвращает список модулей fft и список частот '''
         abs_fft = [abs(_fft) for _fft in self.fft_list]
-        return abs_fft, self.freq_axis_list
+        end = int(len(abs_fft)/2)
+        abs_fft = abs_fft[0: end]
+        end = int(len(self.freq_axis_list)/2)
+        freq_axis = self.freq_axis_list[0: end]
+        return abs_fft, freq_axis
 
     def GetPhase(self):
         ''' фаза амплитуды сигнала '''
@@ -67,6 +74,36 @@ class EIS:
         self.voltage.sort()
         self.current.append(current)
         self.current.sort()
+
+    def GetSignalsSamplesByFrequency(self, freq:int=0):
+        ''' Возвращает сырые данные напряжения и тока для определённой частоты '''
+        v_samples = None
+        c_samples = None
+        for v,c in zip(self.voltage,self.current):
+            if v.GetFrequency() == freq:
+                v_samples = v.GetRawSamlpes()
+            if c.GetFrequency() == freq:
+                c_samples = c.GetRawSamlpes()
+        return v_samples, c_samples
+
+    def GetFftSpectrByFrequency(self, freq:int=0):
+        ''' Возвращает спектры напряжения и тока в абсолютных значениях '''
+        v_fft = None
+        c_fft = None
+        freq_ax = None # значения частоты для оси X
+        for v,c in zip(self.voltage,self.current):
+            if v.GetFrequency() == freq:
+                v_fft = v.GetAbsFftForPlot()
+            if c.GetFrequency() == freq:
+                c_fft = c.GetAbsFftForPlot()
+        return v_fft, c_fft
+
+    def GetFrequencies(self):
+        ''' Возвращает список частот всех сигналов '''
+        freqs = []
+        for v in self.voltage:
+            freqs.append(v.GetFrequency())
+        return freqs
 
     def EisCalc(self):
         ''' рассчёт EIS '''
@@ -143,7 +180,41 @@ class FftResultFile:
             self.eis.AppendSignals(voltage=voltage, current=current)
 
         # self.eis.EisCalc()
-        self.PlotEis()
+        # self.PlotEis()
+
+    def GetFrequensys(self):
+        return self.eis.GetFrequencies()
+
+    # def PlotFft(self, freq:int=0):
+    #     ''' выводит график FFT для частоты '''
+
+    def PlotFrequency(self, freq:int=0):
+        ''' выводит графики напряжения и тока для заданной частоты '''
+        v_samples, c_samples = self.eis.GetSignalsSamplesByFrequency(freq)
+        v_fft, c_fft = self.eis.GetFftSpectrByFrequency(freq)
+
+        if v_samples == None or c_samples == None:
+            print(f'Нест такой частота: {freq}')
+            return
+
+        mpl.rcParams['savefig.directory'] = '.'
+        fig, (ax_smpl,ax_fft) = plt.subplots(2, 1)
+        ax_smpl.set_ylabel('Samples')
+        ax_smpl.set_xlabel('ticks')
+        ax_smpl.plot(v_samples, label='Voltage')
+        ax_smpl.plot(c_samples, label='Current')
+        ax_smpl.legend()
+        ax_smpl.grid(True)
+
+        ax_fft.set_ylabel('abs')
+        ax_fft.set_xlabel('freq')
+        ax_fft.stem(v_fft[1], v_fft[0], label='Voltage', linefmt='r-')
+        ax_fft.stem(c_fft[1], c_fft[0], label='Current', linefmt='g-')
+        ax_fft.legend()
+        ax_fft.grid(True)
+
+        # plt.legend()
+        plt.show()
 
     def PlotEis(self):
         '''  '''
@@ -172,120 +243,34 @@ class FftResultFile:
         plt.legend()
         plt.show()
 
+commands = [ 'f - file_name', 
+            'peis - plot EIS', 
+            'prs - print all frequencies', 
+            'pf - print frequency samlpes',
+            'q - exit']
+# 5_battery_10.28.31_19.02.2026.result.fft
 def main():
-    fft_res = FftResultFile(FILE)
-    return
 
-    print(f'Read data from file: {FILE}')
-    f = open(FILE, 'rt', encoding='utf-8')
-    data_from_file = json.load(f)
-    f.close()
+    parser = None
+    if len(sys.argv) > 1:
+        parser = FftResultFile(sys.argv[1])
 
-    channels_data = {}
-    ch0_data_list = []
-    ch1_data_list = []
+    while True:
+        cmd = input(commands)
 
-    for data in data_from_file:
-        channel_0 = {}
-        channel_1 = {}
-        # print(f'Freq: {data[KEY_FREQ]}, Hz')
-        ch0_data = data[KEY_CHANNEL0]
-        ch1_data = data[KEY_CHANNEL1]
-
-        channel_0[KEY_SIGNAL_ABS_VAL] = ch0_data[KEY_SIGNAL_ABS_VAL]
-        ch0cplx = ListToComplexNumber(ch0_data[KEY_SIGNAL_COMPLEX_VAL])
-        ch0phi = np.angle(ch0cplx) # угол 1-го канала напряжения
-        ch0_oe = abs(ch0cplx)/abs(ch0cplx) # амплитуда 1-го канала в О.Е. единицах от напряжения
-        channel_0[KEY_SIGNAL_COMPLEX_VAL] = cmath.rect(abs(ch0cplx)/abs(ch0cplx), 0) # сдвижка фазы 1-го канала в 0
-        channel_1[KEY_SIGNAL_ABS_VAL] = ch1_data[KEY_SIGNAL_ABS_VAL]
-        ch1cplx = ListToComplexNumber(ch1_data[KEY_SIGNAL_COMPLEX_VAL])
-        ch1phi = np.angle(ch1cplx) # угол 2-го канала тока
-        ch1_oe = abs(ch1cplx)/abs(ch0cplx) # амплитуда 2-го канала в О.Е. единицах от напряжения
-        phi1_delta = abs(ch1phi-ch0phi) # сдвижка угла второго канала тока относительно напряжения
-        channel_1[KEY_SIGNAL_COMPLEX_VAL] = cmath.rect(ch1_oe, phi1_delta) # сдвижка фазы 2-го канала относительно 1-го 
-
-        ch0_data_list.append(channel_0[KEY_SIGNAL_COMPLEX_VAL])
-        ch1_data_list.append(channel_1[KEY_SIGNAL_COMPLEX_VAL])
-        channels_data[data[KEY_FREQ]] = [ channel_0[KEY_SIGNAL_COMPLEX_VAL],channel_1[KEY_SIGNAL_COMPLEX_VAL] ]
-
-        print(f'{ch0phi};{ch1phi},')
-        # print(f'CH0 ABS_VAL: {ch0_data[KEY_SIGNAL_ABS_VAL]}')
-        # print(f'CH0 COMPLEX_VAL: {ch0_data[KEY_SIGNAL_COMPLEX_VAL]}')
-        # print(f'CH1 ABS_VAL: {ch1_data[KEY_SIGNAL_ABS_VAL]}')
-        # print(f'CH1 COMPLEX_VAL: {ch1_data[KEY_SIGNAL_COMPLEX_VAL]}')
-
-
-    sort_freqs = sorted(channels_data)
-
-    _abs_0 = []
-    _image_0 = []
-    _real_0 = []
-    _angle_0 = []
-
-    _abs_1 = []
-    _image_1 = []
-    _real_1 = []
-    _angle_1 = []
-
-    eis_abs = []
-    eis_image = []
-    eis_real = []
-    eis_angle = []
-    for fr in sort_freqs:
-        vals = channels_data[fr]
-        _abs_0.append(np.abs(vals[0]))
-        _image_0.append(np.imag(vals[0]))
-        _real_0.append(np.real(vals[0]))
-        _angle_0.append(np.angle(vals[0]))
-
-        _abs_1.append(np.abs(vals[1]))
-        _image_1.append(np.imag(vals[1]))
-        _real_1.append(np.real(vals[1]))
-        _angle_1.append(np.angle(vals[1]))
-
-        eis_abs.append(np.abs(vals[0]-vals[1]))
-        eis_image.append(-np.imag(vals[0]-vals[1]))
-        eis_real.append(np.real(vals[0]-vals[1]))
-        eis_angle.append(np.angle(vals[0]-vals[1]))
-
-    fig, ax = plt.subplots()
-    ax.set_title('chanel_0')
-    ax.set_ylabel('amplitude')
-    ax.set_xlabel('frequency')
-    ax.grid(True)
-
-    ax.plot(sort_freqs, _abs_0, label='abs')
-    ax.plot(sort_freqs, _image_0, label='image')
-    ax.plot(sort_freqs, _real_0, label='real')
-    ax.plot(sort_freqs, _angle_0, label='angle')
-    plt.legend()
-
-    fig, ax = plt.subplots()
-    ax.set_title('chanel_1')
-    ax.set_ylabel('amplitude')
-    ax.set_xlabel('frequency')
-    ax.grid(True)
-
-    ax.plot(sort_freqs, _abs_1, label='abs')
-    ax.plot(sort_freqs, _image_1, label='image')
-    ax.plot(sort_freqs, _real_1, label='real')
-    ax.plot(sort_freqs, _angle_1, label='angle')
-    plt.legend()
-
-    fig, ax = plt.subplots()
-    ax.set_title('EIS')
-    ax.set_ylabel('imag')
-    ax.set_xlabel('real')
-    ax.grid(True)
-
-    # ax.plot(_image_0, _real_0, label='EIS_0')
-    ax.plot(_real_1, _image_1, label='EIS_1') # как буд-то это и есть график EIS
-    # ax.plot(eis_image, eis_real, label='EIS')
-    plt.legend()
-
-    plt.show()
-
-    pass
+        if cmd == 'prs':
+            print(parser.GetFrequensys())
+        elif cmd == 'f':
+            freq = input('enter file name:')
+            parser = FftResultFile(freq)
+        elif cmd == 'peis':
+            parser.PlotEis()
+        elif cmd == 'pf':
+            print(parser.GetFrequensys())
+            freq = int(input('enter frequency:'))
+            parser.PlotFrequency(freq)
+        elif cmd == 'q':
+            return
 
 if __name__ == '__main__':
     main()
