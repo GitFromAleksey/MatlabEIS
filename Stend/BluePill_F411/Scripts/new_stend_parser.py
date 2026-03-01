@@ -87,8 +87,8 @@ class Parser:
     def CreateTablesForEachFreq(self, sorted_data_dict):
         ''' создаёт типа таблц данных для каждой частоты '''
         table_data = {}
-        table_data[KEY_EXPERIMENT_NAME] = 'exp name'
-        table_data[KEY_EXPERIMENT_DATE] = '25.11.2025T10.22.00'
+        table_data[KEY_EXPERIMENT_NAME] = self.file_name_without_ext # 'exp name'
+        table_data[KEY_EXPERIMENT_DATE] = self.mod_time # '25.11.2025T10.22.00'
         table_data[KEY_PARSED_DATA] = []
         for key in sorted_data_dict.keys():
             # table_data[key] = []
@@ -103,8 +103,8 @@ class Parser:
                 ch0.append(data[KEY_VOLT_DATA])
                 ch1.append(data[KEY_CURRENT_DATA])
             freq_data[KEY_DATA].append({KEY_TIME_STAMP   : time_stamp,
-                                     KEY_VOLT_DATA    : ch0,
-                                     KEY_CURRENT_DATA : ch1})
+                                        KEY_VOLT_DATA    : ch0,
+                                        KEY_CURRENT_DATA : ch1})
             table_data[KEY_PARSED_DATA].append(freq_data)
         return table_data
 

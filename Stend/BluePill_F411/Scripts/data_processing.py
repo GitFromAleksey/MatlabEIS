@@ -3,11 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from common_constants import *
 
-FILE = '5_battery_10.28.31_19.02.2026.result'
+FILE = 'Sodium6_100_40000_100_14.02.14_26.02.2026.result'
 # SIGNAL_FREQ = 20000 # Hz
 
 # 1000
-Fs = 87099.71 # Частота дискритизация-
+# Fs = 87099.71 # Частота дискретизация
 
 def ConvertStrListToInt(data_str_list):
     data_int_list = [int(x) for x in data_str_list]
@@ -41,22 +41,22 @@ def _FindSignalValueInFft(signal_freq, fft_spectrum, freq_ax):
         return fft_max_ampl # fft_spectrum[index+1]
     return None
 
-def FindSignalValueInFft(signal_freq, fft_spectrum, freq_ax):
-    ''' Ищет в спектре амплитуду для определённой частоты '''
-    index = 0
-    # поиск индекса частоты на оси частот
-    for f in freq_ax:
-        # поиск заданной частоты на оси частот
-        if f > signal_freq and f < signal_freq*1.1:
-            start_index = int(index*0.9)
-            stop_index = int(index*1.1)
-            srez = fft_spectrum[start_index : stop_index]
-            for s in srez:
-                if int(abs(s)) == int(max(abs(srez))):
-                    print(f'FindFreq: {f} Hz, Amplitude: {abs(s)}, maxcplx: {s}')
-                    print(f'start_freq: {freq_ax[start_index]}, stop_freq: {freq_ax[stop_index]}')
-                    return s
-        index += 1   
+# def FindSignalValueInFft(signal_freq, fft_spectrum, freq_ax):
+#     ''' Ищет в спектре амплитуду для определённой частоты '''
+#     index = 0
+#     # поиск индекса частоты на оси частот
+#     for f in freq_ax:
+#         # поиск заданной частоты на оси частот
+#         if f > signal_freq and f < signal_freq*1.1:
+#             start_index = int(index*0.9)
+#             stop_index = int(index*1.1)
+#             srez = fft_spectrum[start_index : stop_index]
+#             for s in srez:
+#                 if int(abs(s)) == int(max(abs(srez))):
+#                     print(f'FindFreq: {f} Hz, Amplitude: {abs(s)}, maxcplx: {s}')
+#                     print(f'start_freq: {freq_ax[start_index]}, stop_freq: {freq_ax[stop_index]}')
+#                     return s
+#         index += 1   
 
 def FftCalc(samples, signal_freq, Fs):
     ''' Рассчёт ДПФ сигнала
@@ -80,6 +80,35 @@ def FftCalc(samples, signal_freq, Fs):
     # t = np.arange(0, sample_duration, Ts) # массив отсчётов времени каждого сэмпла
     signal_offset = Ych0real[0] # постоянная составляющая
     return Y, freq_ax, signal_offset
+
+# https://chipenable.ru/index.php/programming-avr/162-prostoy-cifrovoy-filtr.html
+#define SPS 9600UL # частота дискретизации АЦП
+#define Trc 0.001f # постоянная времени фильтра
+#define K (SPS*Trc) # коэффициент фильтра
+# uint8_t Filtr(uint8_t data)
+# {
+#    static uint16_t Dacc = 0;
+#    static uint8_t Dout = 0;
+#    uint8_t Din = data;
+
+#    Dacc = Dacc + Din - Dout;
+#    Dout = Dacc/(uint16_t)K;
+
+#    return Dout;
+# }
+def Filtr(data, freq):
+    SPS = Fs
+    Trc = 1/(100*freq) # 0.00001
+    K = SPS*Trc
+    Dacc = 0
+    Dout = 0
+    # Din = 0
+    res = []
+    for Din in data:
+        Dacc = Dacc + Din - Dout
+        Dout = Dacc/K
+        res.append(Dout)
+    return res
 
 class NumpyEncoder(json.JSONEncoder):
     ''' Адаптор комплексных чисел numpy для json сереализации '''
@@ -112,16 +141,20 @@ def main():
         del samples[KEY_TIME_STAMP] # таймштамп нам больше не нужен
 
         # перевод данных в относительные единицы
-        ch0_samples = []
-        for smpl in samples[KEY_CHANNEL0]:
-            ch0_samples.append(smpl/ADC_SCALE)
-        ch1_samples = []
-        for smpl in samples[KEY_CHANNEL1]:
-            ch1_samples.append(smpl/ADC_SCALE)
+        # ch0_samples = []
+        # for smpl in samples[KEY_CHANNEL0]:
+        #     ch0_samples.append(smpl/ADC_SCALE)
+        ch0_filtr = Filtr(samples[KEY_CHANNEL0], signal_freq)
+        # ch1_samples = []
+        # for smpl in samples[KEY_CHANNEL1]:
+        #     ch1_samples.append(smpl/ADC_SCALE)
+        ch1_filtr = Filtr(samples[KEY_CHANNEL1], signal_freq)
 
         # вычисление ДПФ
         Ych0, freq_ax_ch0, signal_offset_ch0 = FftCalc(samples[KEY_CHANNEL0], signal_freq, Fs)
         Ych1, freq_ax_ch1, signal_offset_ch1 = FftCalc(samples[KEY_CHANNEL1], signal_freq, Fs)
+        # Ych0, freq_ax_ch0, signal_offset_ch0 = FftCalc(ch0_filtr, signal_freq, Fs)
+        # Ych1, freq_ax_ch1, signal_offset_ch1 = FftCalc(ch1_filtr, signal_freq, Fs)
 
         # поиск комплексного значения амплитуды сигнала в спектре для его частоты
         ch0_compl_val = _FindSignalValueInFft(signal_freq, Ych0, freq_ax_ch0)
@@ -140,7 +173,9 @@ def main():
             ax.stem(freq_ax_ch1, abs(Ych1), label='abs_ch1', linefmt='g-')
             ax.legend()
             ax1.plot(samples[KEY_CHANNEL0], label='abs_ch0')
+            ax1.plot(ch0_filtr, label='filtr_ch0')
             ax1.plot(samples[KEY_CHANNEL1], label='abs_ch1')
+            ax1.plot(ch1_filtr, label='filtr_ch1')
             ax1.legend()
             plt.show()
             continue
@@ -152,6 +187,7 @@ def main():
         # добавление вычисленных данных в структуру для дальнейшего сохранение в файл
         fft_result = {}
         fft_result[KEY_FREQ] = signal_freq
+        # samples = {KEY_CHANNEL0 : ch0_filtr, KEY_CHANNEL1 : ch1_filtr}
         fft_result[KEY_DATA] = samples
 
         ch0_results = {}

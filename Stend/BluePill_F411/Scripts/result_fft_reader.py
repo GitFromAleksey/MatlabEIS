@@ -161,7 +161,7 @@ class FftResultFile:
     def ReadFromFile(self, file_path: str = ''):
         '''  '''
         print(f'Read data from file: {file_path}')
-        f = open(FILE, 'rt', encoding='utf-8')
+        f = open(file_path, 'rt', encoding='utf-8')
         data_from_file = json.load(f)
         f.close()
 
