@@ -51,7 +51,7 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 #define AMPLITUDE   3.30 // Volt
 #define FREQ_START  100
-#define FREQ_STOP   20000
+#define FREQ_STOP   40000
 #define FREQ_STEP   100
 
 #define ADC_BIG_DATA_BUF_SIZE    1742u // 30468u
@@ -62,6 +62,7 @@ typedef enum
   MODE_DDS_ON,
   MODE_ADC_COLLECTING,
   MODE_ADC_COLLECT_STOP,
+  MODE_USB_TX_START,
   MODE_USB_TX,
   MODE_STOP
 } work_modes_t;
@@ -231,7 +232,7 @@ int main(void)
         break;
       case MODE_DDS_ON:
           DdsChannelOn(DDS_CHANNEL_1);
-          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
+//          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
           DdsChannelSetFreq(DDS_CHANNEL_1, freq);
 
           HAL_Delay(100); // ждём чтобы генератор нормально включился
@@ -249,39 +250,83 @@ int main(void)
       case MODE_ADC_COLLECT_STOP:
         usb_tx_data_index = 0;
         LedSwitch(false); // HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+        WorkMode = MODE_USB_TX_START;
+        break;
+      case MODE_USB_TX_START:
+        usb_tx_data_index = 0;
+        sprintf(usb_tx_buf, "{\"freq\":%d,\"data\":[", freq);
+        while( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) != USBD_OK){}
         WorkMode = MODE_USB_TX;
         break;
       case MODE_USB_TX:
         LedSwitch(true);
-        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"freq\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
-                usb_tx_data_index,
-                freq,
-                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
-                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
-        if( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) == USBD_OK)
+
+        if( usb_tx_data_index == 0)
         {
-          usb_tx_data_index++;
-          if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
+          sprintf(usb_tx_buf, "[%d,%d]",
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+        }
+        else
+        {
+          sprintf(usb_tx_buf, ",[%d,%d]",
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+        }
+
+        while( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) != USBD_OK){}
+        usb_tx_data_index++;
+        if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
+        {
+          usb_tx_data_index = 0;
+
+          USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+          while(hcdc->TxState != 0) {}
+          sprintf(usb_tx_buf, "]}\r\n");
+          CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
+
+          if(freq < FREQ_STOP)
           {
-            usb_tx_data_index = 0;
-
-            USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-            while(hcdc->TxState != 0) {}
-            sprintf(usb_tx_buf, "---------------------------------------\r\n");
-            CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
-
-            if(freq < FREQ_STOP)
-            {
-              freq += FREQ_STEP;
-              WorkMode = MODE_DDS_ON;
-            }
-            else
-            {
-              freq = FREQ_START;
-              WorkMode = MODE_STOP;
-            }
+            freq += FREQ_STEP;
+            WorkMode = MODE_DDS_ON;
+          }
+          else
+          {
+            freq = FREQ_START;
+            WorkMode = MODE_STOP;
           }
         }
+
+
+//        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"freq\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
+//                usb_tx_data_index,
+//                freq,
+//                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+//                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+//        if( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) == USBD_OK)
+//        {
+//          usb_tx_data_index++;
+//          if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
+//          {
+//            usb_tx_data_index = 0;
+
+//            USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+//            while(hcdc->TxState != 0) {}
+//            sprintf(usb_tx_buf, "---------------------------------------\r\n");
+//            CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
+
+//            if(freq < FREQ_STOP)
+//            {
+//              freq += FREQ_STEP;
+//              WorkMode = MODE_DDS_ON;
+//            }
+//            else
+//            {
+//              freq = FREQ_START;
+//              WorkMode = MODE_STOP;
+//            }
+//          }
+//        }
         break;
       case MODE_STOP:
         WorkMode = MODE_PGM_START;
