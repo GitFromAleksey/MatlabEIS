@@ -1,4 +1,5 @@
 import json
+from common_constants import *
 
 FILE_NAME = 'robiton3.log'
 
@@ -12,16 +13,16 @@ def main():
     content = f.readlines()
     f.close()
 
-    result = { "EXPERIMENT_NAME": "testgen_ph_-30", 
-              "EXPERIMENT_DATE": "14.12.36_02.03.2026"}
-    result['PARSED_DATA'] = []
+    result = { KEY_EXPERIMENT_NAME: "testgen_ph_-30", 
+              KEY_EXPERIMENT_DATE: "14.12.36_02.03.2026"}
+    result[KEY_PARSED_DATA] = []
 
     for line in content:
         try:
             j = json.loads(line)
             data = {}
-            data["FREQ"] = str(j['freq'])
-            data['DATA'] = []
+            data[KEY_FREQ] = str(j['freq'])
+            data[KEY_DATA] = []
 
             TIME_STAMP = []
             CH0 = []
@@ -33,14 +34,14 @@ def main():
                 CH0.append(ch0)
                 CH1.append(ch1)
 
-            data['DATA'] = [
+            data[KEY_DATA] = [
                 {
-                'TIME_STAMP' : TIME_STAMP,
-                'Ch0' : CH0,
-                'Ch1' : CH1
+                KEY_TIME_STAMP : TIME_STAMP,
+                KEY_CHANNEL0 : CH0,
+                KEY_CHANNEL1 : CH1
                 }
             ]
-            result['PARSED_DATA'].append(data)
+            result[KEY_PARSED_DATA].append(data)
         except:
             pass
 
