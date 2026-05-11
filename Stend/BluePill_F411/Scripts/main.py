@@ -2,9 +2,10 @@ import glob
 from pathlib import Path
 from common_constants import *
 from new_stend_parser import LogParser
+from result_fft_reader import FftResultFile
 import consolemenu
-from consolemenu import ConsoleMenu, SelectionMenu
-from consolemenu.items import FunctionItem, SubmenuItem, CommandItem
+from consolemenu import * # ConsoleMenu, SelectionMenu
+from consolemenu.items import * # FunctionItem, SubmenuItem, CommandItem, MenuItem
 
 # -----------------------------------------------------------------------------
 def Init():
@@ -43,6 +44,20 @@ def Calculate():
 def ResultShow():
     '''  '''
     print(f'ResultShow')
+
+    idx = 0
+    path = CALC_FOLDER+'/*.fft'
+    files = glob.glob(path)
+    files_dict = {}
+    for file in files:
+        files_dict[str(idx)] = file
+        print(f'{idx}. {file}')
+        idx += 1
+    file_num = input('Введи номер файла: ')
+    fft_file = files_dict[file_num]
+    print(f'{fft_file}')
+    fft_res = FftResultFile(fft_file)
+    fft_res.PlotEis()
     input()
 # -----------------------------------------------------------------------------
 def main():
@@ -53,7 +68,15 @@ def main():
 
     function_parse      = FunctionItem(function=LogParse,   text="Парсинг")
     function_calculate  = FunctionItem(function=Calculate,  text="Вычисления")
-    function_resultshow = FunctionItem(function=ResultShow, text="Отображение результата")
+
+    # Create a second submenu, but this time use a standard ConsoleMenu instance
+    submenu = ConsoleMenu("Отображение результата", "Submenu subtitle.")
+    function_read_fft  = FunctionItem(function=ResultShow, text="EIS plot")
+    function_freq_plot = FunctionItem(function=None, text="Freq plot")
+    submenu.append_item(function_read_fft)
+    submenu.append_item(function_freq_plot)
+    function_resultshow = SubmenuItem("Отображение результата", submenu=submenu)
+    function_resultshow.set_menu(menu)
 
     menu.append_item(function_parse)
     menu.append_item(function_calculate)
