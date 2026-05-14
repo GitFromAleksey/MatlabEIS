@@ -21,7 +21,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include "../../DDS/dds.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +50,50 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+#define AMPLITUDE   3.30 // Volt
+#define FREQ_START  100
+#define FREQ_STOP   40000
+#define FREQ_STEP   100
 
+#define ADC_BIG_DATA_BUF_SIZE    1742u // 30468u
+
+typedef enum
+{
+  MODE_PGM_START,
+  MODE_DDS_ON,
+  MODE_ADC_COLLECTING,
+  MODE_ADC_COLLECT_STOP,
+  MODE_USB_TX_START,
+  MODE_USB_TX,
+  MODE_STOP
+} work_modes_t;
+
+// номера АЦП каналов в массиве AdcDmaDataBuf
+enum
+{
+  ADC_IN_0 = 0,
+  ADC_IN_1 = 1,
+  ADC_DATA_BUF_SIZE
+};
+
+typedef struct
+{
+  uint16_t data[ADC_DATA_BUF_SIZE];
+} adc_channels_array_t;
+
+// структура массива данных
+typedef struct
+{
+  adc_channels_array_t channels[ADC_BIG_DATA_BUF_SIZE];
+  uint32_t channel_index;
+} adc_big_array_t;
+
+work_modes_t WorkMode;
+uint32_t DataCollectTime;
+volatile uint16_t DmaData[ADC_DATA_BUF_SIZE];
+volatile adc_big_array_t AdcBigDataBuf;
+
+bool DataCollecionIsStarted = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,12 +104,76 @@ static void MX_ADC2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
+// ----------------------------------------------------------------------------
+// старт преобразования каналов АЦП
+void AdcStartConversion(void)
+{
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DmaData, ADC_DATA_BUF_SIZE);
+}
+// ----------------------------------------------------------------------------
+// запуск заполнения массива данными
+void StartDataCollection(void)
+{
+  if(DataCollecionIsStarted == true)
+    return;
 
+  DataCollecionIsStarted = true;
+  AdcBigDataBuf.channel_index = 0;
+
+  DataCollectTime = HAL_GetTick();
+  AdcStartConversion();
+}
+// ----------------------------------------------------------------------------
+//void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
+//{
+////  AdcStartConversion();
+//  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+//}
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+//  HAL_ADC_Stop_DMA(&hadc1);
+  if(DataCollecionIsStarted)
+    AdcStartConversion();
+
+  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[0] = DmaData[0];
+  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[1] = DmaData[1];
+
+  AdcBigDataBuf.channel_index++;
+  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
+  {
+    DataCollectTime = HAL_GetTick() - DataCollectTime;
+    DataCollecionIsStarted = false;
+  }
+  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+}
+// ----------------------------------------------------------------------------
+void UartSendData(uint8_t *data, uint16_t len)
+{
+  HAL_UART_Transmit(&huart1, data, len, 100);
+  HAL_Delay(200);
+}
+// ----------------------------------------------------------------------------
+void DdsGenSetup(void)
+{
+  t_dds_init init;
+
+  init.send_data = UartSendData;
+
+  DdsInit(&init);
+
+  DdsChannelOff(DDS_CHANNEL_1);
+  DdsChannelOff(DDS_CHANNEL_2);
+  DdsChannelOff(DDS_CHANNEL_3);
+}
+// ----------------------------------------------------------------------------
+void LedSwitch(bool on)
+{ HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, (on)?(GPIO_PIN_RESET):(GPIO_PIN_SET)); }
+// ----------------------------------------------------------------------------
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#define USB_TX_BUF_SIZE    100u
 /* USER CODE END 0 */
 
 /**
@@ -74,7 +184,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  char usb_tx_buf[USB_TX_BUF_SIZE];
+  uint32_t usb_tx_data_index;
+  uint32_t freq = FREQ_START;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,13 +212,136 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  DdsGenSetup();
 
+  WorkMode = MODE_PGM_START;
+
+  sprintf(usb_tx_buf, "Program start.\r\n");
+  HAL_UART_Transmit(&huart3, (uint8_t*)usb_tx_buf, strlen(usb_tx_buf), 100);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  while(1)
   {
+    switch(WorkMode)
+    {
+      case MODE_PGM_START:
+        LedSwitch(true);
+        if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
+        {
+          LedSwitch(false);
+          HAL_Delay(500);
+          WorkMode = MODE_DDS_ON;
+        }
+        break;
+      case MODE_DDS_ON:
+          DdsChannelOn(DDS_CHANNEL_1);
+//          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
+          DdsChannelSetFreq(DDS_CHANNEL_1, freq);
+
+          HAL_Delay(100); // ждём чтобы генератор нормально включился
+          StartDataCollection();
+          LedSwitch(false);
+          WorkMode = MODE_ADC_COLLECTING;
+        break;
+      case MODE_ADC_COLLECTING:
+        if(!DataCollecionIsStarted)
+        {
+          DdsChannelOff(DDS_CHANNEL_1);
+          WorkMode = MODE_ADC_COLLECT_STOP;
+        }
+        break;
+      case MODE_ADC_COLLECT_STOP:
+        usb_tx_data_index = 0;
+        LedSwitch(false);
+        WorkMode = MODE_USB_TX_START;
+        break;
+      case MODE_USB_TX_START:
+        usb_tx_data_index = 0;
+        sprintf(usb_tx_buf, "{\"freq\":%d,\"data\":[", freq);
+//        while( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) != USBD_OK){}
+        HAL_UART_Transmit(&huart3, (uint8_t*)usb_tx_buf, strlen(usb_tx_buf), 100);
+        WorkMode = MODE_USB_TX;
+        break;
+      case MODE_USB_TX:
+        LedSwitch(true);
+
+        if( usb_tx_data_index == 0)
+        {
+          sprintf(usb_tx_buf, "[%d,%d]",
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+        }
+        else
+        {
+          sprintf(usb_tx_buf, ",[%d,%d]",
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+        }
+
+//        while( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) != USBD_OK){}
+        usb_tx_data_index++;
+        if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
+        {
+          usb_tx_data_index = 0;
+
+//          USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+//          while(hcdc->TxState != 0) {}
+          sprintf(usb_tx_buf, "]}\r\n");
+//          CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
+
+          if(freq < FREQ_STOP)
+          {
+            freq += FREQ_STEP;
+            WorkMode = MODE_DDS_ON;
+          }
+          else
+          {
+            freq = FREQ_START;
+            WorkMode = MODE_STOP;
+          }
+        }
+
+
+//        sprintf(usb_tx_buf, "{\"TIME_STAMP\":%d,\"freq\":%d,\"Ch0\":%d,\"Ch1\":%d}\r\n",
+//                usb_tx_data_index,
+//                freq,
+//                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+//                AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+//        if( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) == USBD_OK)
+//        {
+//          usb_tx_data_index++;
+//          if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
+//          {
+//            usb_tx_data_index = 0;
+
+//            USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+//            while(hcdc->TxState != 0) {}
+//            sprintf(usb_tx_buf, "---------------------------------------\r\n");
+//            CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
+
+//            if(freq < FREQ_STOP)
+//            {
+//              freq += FREQ_STEP;
+//              WorkMode = MODE_DDS_ON;
+//            }
+//            else
+//            {
+//              freq = FREQ_START;
+//              WorkMode = MODE_STOP;
+//            }
+//          }
+//        }
+        break;
+      case MODE_STOP:
+        WorkMode = MODE_PGM_START;
+        break;
+      default:
+        WorkMode = MODE_PGM_START;
+        break;
+    }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
