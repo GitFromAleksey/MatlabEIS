@@ -89,6 +89,8 @@ typedef struct
   uint32_t channel_index;
 } adc_big_array_t;
 
+uint32_t DataBuf[ADC_BIG_DATA_BUF_SIZE];
+
 work_modes_t WorkMode;
 uint32_t DataCollectTime;
 volatile uint16_t DmaData[ADC_DATA_BUF_SIZE];
@@ -102,15 +104,17 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_ADC2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 // ----------------------------------------------------------------------------
 // старт преобразования каналов АЦП
 void AdcStartConversion(void)
 {
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DmaData, ADC_DATA_BUF_SIZE);
+  HAL_ADC_Start(&hadc2);
+  HAL_ADCEx_MultiModeStart_DMA(&hadc1, DataBuf, ADC_BIG_DATA_BUF_SIZE);
+//  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)DmaData, ADC_DATA_BUF_SIZE);
 }
 // ----------------------------------------------------------------------------
 // запуск заполнения массива данными
@@ -133,6 +137,7 @@ void StartDataCollection(void)
 //}
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
+  HAL_ADCEx_MultiModeStop_DMA(&hadc1);
 //  HAL_ADC_Stop_DMA(&hadc1);
   if(DataCollecionIsStarted)
     AdcStartConversion();
@@ -211,9 +216,9 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
-  MX_ADC2_Init();
   MX_USART1_UART_Init();
   MX_USART3_UART_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   DdsGenSetup();
 
@@ -231,11 +236,11 @@ int main(void)
     {
       case MODE_PGM_START:
         LedSwitch(true);
-        if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
+//        if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
         {
           LedSwitch(false);
           HAL_Delay(500);
-          WorkMode = MODE_DDS_ON;
+//          WorkMode = MODE_DDS_ON;
         }
         break;
       case MODE_DDS_ON:
@@ -284,6 +289,7 @@ int main(void)
         }
 
 //        while( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) != USBD_OK){}
+        HAL_UART_Transmit(&huart3, (uint8_t*)usb_tx_buf, strlen(usb_tx_buf), 100);
         usb_tx_data_index++;
         if(usb_tx_data_index >= ADC_BIG_DATA_BUF_SIZE)
         {
@@ -293,7 +299,7 @@ int main(void)
 //          while(hcdc->TxState != 0) {}
           sprintf(usb_tx_buf, "]}\r\n");
 //          CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf));
-
+          HAL_UART_Transmit(&huart3, (uint8_t*)usb_tx_buf, strlen(usb_tx_buf), 100);
           if(freq < FREQ_STOP)
           {
             freq += FREQ_STEP;
@@ -410,6 +416,7 @@ static void MX_ADC1_Init(void)
 
   /* USER CODE END ADC1_Init 0 */
 
+  ADC_MultiModeTypeDef multimode = {0};
   ADC_ChannelConfTypeDef sConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
@@ -420,12 +427,20 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure the ADC multi-mode
+  */
+  multimode.Mode = ADC_DUALMODE_REGSIMULT;
+  if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
     Error_Handler();
   }
@@ -467,7 +482,7 @@ static void MX_ADC2_Init(void)
   */
   hadc2.Instance = ADC2;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
