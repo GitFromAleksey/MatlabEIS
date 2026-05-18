@@ -56,7 +56,7 @@ UART_HandleTypeDef huart3;
 #define FREQ_STOP   40000
 #define FREQ_STEP   100
 
-#define ADC_BIG_DATA_BUF_SIZE    1742u // 30468u
+#define ADC_BIG_DATA_BUF_SIZE    4285 // 1742u // 30468u
 
 typedef enum
 {
@@ -70,31 +70,31 @@ typedef enum
 } work_modes_t;
 
 // номера АЦП каналов в массиве AdcDmaDataBuf
-enum
-{
-  ADC_IN_0 = 0,
-  ADC_IN_1 = 1,
-  ADC_DATA_BUF_SIZE
-};
+//enum
+//{
+//  ADC_IN_0 = 0,
+//  ADC_IN_1 = 1,
+//  ADC_DATA_BUF_SIZE
+//};
 
-typedef struct
-{
-  uint16_t data[ADC_DATA_BUF_SIZE];
-} adc_channels_array_t;
+//typedef struct
+//{
+//  uint16_t data[ADC_DATA_BUF_SIZE];
+//} adc_channels_array_t;
 
 // структура массива данных
-typedef struct
-{
-  adc_channels_array_t channels[ADC_BIG_DATA_BUF_SIZE];
-  uint32_t channel_index;
-} adc_big_array_t;
+//typedef struct
+//{
+//  adc_channels_array_t channels[ADC_BIG_DATA_BUF_SIZE];
+//  uint32_t channel_index;
+//} adc_big_array_t;
 
 uint32_t DataBuf[ADC_BIG_DATA_BUF_SIZE];
 
 work_modes_t WorkMode;
 uint32_t DataCollectTime;
-volatile uint16_t DmaData[ADC_DATA_BUF_SIZE];
-volatile adc_big_array_t AdcBigDataBuf;
+//volatile uint16_t DmaData[ADC_DATA_BUF_SIZE];
+//volatile adc_big_array_t AdcBigDataBuf;
 
 bool DataCollecionIsStarted = false;
 /* USER CODE END PV */
@@ -124,7 +124,7 @@ void StartDataCollection(void)
     return;
 
   DataCollecionIsStarted = true;
-  AdcBigDataBuf.channel_index = 0;
+//  AdcBigDataBuf.channel_index = 0;
 
   DataCollectTime = HAL_GetTick();
   AdcStartConversion();
@@ -142,11 +142,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   if(DataCollecionIsStarted)
     AdcStartConversion();
 
-  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[0] = DmaData[0];
-  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[1] = DmaData[1];
+//  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[0] = DmaData[0];
+//  AdcBigDataBuf.channels[AdcBigDataBuf.channel_index].data[1] = DmaData[1];
 
-  AdcBigDataBuf.channel_index++;
-  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
+//  AdcBigDataBuf.channel_index++;
+//  if(AdcBigDataBuf.channel_index == ADC_BIG_DATA_BUF_SIZE)
   {
     DataCollectTime = HAL_GetTick() - DataCollectTime;
     DataCollecionIsStarted = false;
@@ -236,11 +236,11 @@ int main(void)
     {
       case MODE_PGM_START:
         LedSwitch(true);
-//        if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
+        if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == GPIO_PIN_RESET)
         {
           LedSwitch(false);
           HAL_Delay(500);
-//          WorkMode = MODE_DDS_ON;
+          WorkMode = MODE_DDS_ON;
         }
         break;
       case MODE_DDS_ON:
@@ -278,14 +278,18 @@ int main(void)
         if( usb_tx_data_index == 0)
         {
           sprintf(usb_tx_buf, "[%d,%d]",
-            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
-            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+            (DataBuf[usb_tx_data_index] & 0xFFFF), // AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+            (DataBuf[usb_tx_data_index] >> 16)); // AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+//            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+//            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
         }
         else
         {
           sprintf(usb_tx_buf, ",[%d,%d]",
-            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
-            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
+            (DataBuf[usb_tx_data_index] & 0xFFFF),
+            (DataBuf[usb_tx_data_index] >> 16));
+//            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_0],
+//            AdcBigDataBuf.channels[usb_tx_data_index].data[ADC_IN_1]);
         }
 
 //        while( CDC_Transmit_FS((uint8_t*)usb_tx_buf, strlen(usb_tx_buf)) != USBD_OK){}
@@ -390,7 +394,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
