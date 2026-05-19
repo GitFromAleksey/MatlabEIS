@@ -52,11 +52,11 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 #define AMPLITUDE   3.30 // Volt
-#define FREQ_START  100
-#define FREQ_STOP   40000
-#define FREQ_STEP   100
+#define FREQ_START  500
+#define FREQ_STOP   200000
+#define FREQ_STEP   500
 
-#define ADC_BIG_DATA_BUF_SIZE    4285 // 1742u // 30468u
+#define ADC_BIG_DATA_BUF_SIZE    1000 // 4285 // 1742u // 30468u
 
 typedef enum
 {
@@ -244,9 +244,9 @@ int main(void)
         }
         break;
       case MODE_DDS_ON:
-          DdsChannelOn(DDS_CHANNEL_1);
-//          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
           DdsChannelSetFreq(DDS_CHANNEL_1, freq);
+//          DdsChannelSetAmpl(DDS_CHANNEL_1, AMPLITUDE);
+          DdsChannelOn(DDS_CHANNEL_1);
 
           HAL_Delay(100); // ждём чтобы генератор нормально включился
           StartDataCollection();
