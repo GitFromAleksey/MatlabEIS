@@ -62,7 +62,7 @@ L = t_len;              % общее кол-во захваченных сэмп
 x_diff = diff(t);       % разница времен м.у сэмплами
 Ts = mean(x_diff);      % приод дискретизации
 Fs = 1/Ts;              % частота дискретизации
-Yabs = abs(Y_fft);      % массив модулей fft
+Yabs = abs(Y_fft)*(2/L); % массив модулей fft (*(2/L) - нормировка частоты)
 freq_ax = Fs/L*(0:L-1); % массив частот по оси x.
 
 % Поиск амплитуды сигнала
@@ -81,7 +81,11 @@ tiledlayout(2,1);
 
 %  Амплитуда/частота
 ax1 = nexttile;
-plot(ax1, freq_ax, Yabs, "LineWidth", 2);
+% срезы массивов для построения графика FFT в районе нужной частоты
+
+FreqSlice = freq_ax(1 : i+1); % срез массива частот
+YabsSlice = Yabs(1 : i+1);    % срез массива амплитуд
+plot(ax1, FreqSlice, YabsSlice, "LineWidth", 2);
 title(ax1, 'FFT');
 xlabel('f, Hz');
 ylabel('Amplitude');
@@ -95,6 +99,7 @@ plot(ax0, t, Y);
 title(ax0, 'Original signal');
 xlabel('time');
 ylabel('Ampl');
+grid on
 
 hold off
 pause(0.1);
