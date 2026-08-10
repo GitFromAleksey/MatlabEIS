@@ -1,0 +1,68 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.6 Chrome/144.0.7559.236 Electron/40.8.4 Safari/537.36" version="29.6.6">
+  <diagram name="Страница-1" id="G-gGuP6O41LnC7CREcPy">
+    <mxGraphModel dx="642" dy="676" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="VGK0bqJuvdofryYPIAZx-15" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="VGK0bqJuvdofryYPIAZx-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="СИСТЕМА УПРАВЛЕНИЯ БАТАРЕЕЙ" vertex="1">
+          <mxGeometry height="60" width="120" x="500" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-16" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="VGK0bqJuvdofryYPIAZx-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="ТЯГОВАЯ АККУМУЛЯТОРНАЯ БАТАРЕЯ" vertex="1">
+          <mxGeometry height="60" width="120" x="340" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-14" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="VGK0bqJuvdofryYPIAZx-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="СИЛОВОЙ ПРЕОБРАЗОВАТЕЛЬ" vertex="1">
+          <mxGeometry height="60" width="130" x="650" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="Dyjyoi_6Snm4hYf5sNif-1" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=0;" target="VGK0bqJuvdofryYPIAZx-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="880" y="560" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="ТЯГОВЫЙ ЭЛЕКТРОДВИГАТЕЛЬ" vertex="1">
+          <mxGeometry height="60" width="140" x="810" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-17" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;curved=0;" target="VGK0bqJuvdofryYPIAZx-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="СИСТЕМА РЕКУПЕРАЦИИ ЭНЕРГИИ" vertex="1">
+          <mxGeometry height="60" width="120" x="580" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-12" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="VGK0bqJuvdofryYPIAZx-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="ТЕПЛОВОЙ&lt;div&gt;КОНТУР&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="500" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-13" edge="1" parent="1" source="VGK0bqJuvdofryYPIAZx-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="VGK0bqJuvdofryYPIAZx-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="БОРТОВАЯ&amp;nbsp;&lt;div&gt;СЕТЬ И&amp;nbsp;&lt;/div&gt;&lt;div&gt;НАГРУЗКА&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="655" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-8" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Источник энергии" vertex="1">
+          <mxGeometry height="30" width="120" x="340" y="374" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-9" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Мониторинг, защита, оценка состояния" vertex="1">
+          <mxGeometry height="30" width="110" x="505" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Управление мощностью" vertex="1">
+          <mxGeometry height="30" width="127.5" x="651.25" y="463" as="geometry" />
+        </mxCell>
+        <mxCell id="VGK0bqJuvdofryYPIAZx-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Исполнительный контур" vertex="1">
+          <mxGeometry height="30" width="127.5" x="816.25" y="366" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
