@@ -1,0 +1,52 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.6 Chrome/144.0.7559.236 Electron/40.8.4 Safari/537.36" version="29.6.6">
+  <diagram name="Страница-1" id="G-gGuP6O41LnC7CREcPy">
+    <mxGraphModel dx="770" dy="818" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-1" parent="1" style="pointerEvents=1;verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.resistors.resistor_1;" value="&lt;i&gt;&lt;span lang=&quot;EN-US&quot; style=&quot;font-size:14.0pt;&lt;br/&gt;line-height:107%;font-family:&amp;quot;Times New Roman&amp;quot;,serif;mso-fareast-font-family:&lt;br/&gt;Calibri;mso-fareast-theme-font:minor-latin;mso-ansi-language:EN-US;mso-fareast-language:&lt;br/&gt;EN-US;mso-bidi-language:AR-SA&quot;&gt;R&lt;sub&gt;Ω&lt;/sub&gt;&lt;/span&gt;&lt;/i&gt;" vertex="1">
+          <mxGeometry height="20" width="100" x="340" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-7" edge="1" parent="1" source="27cfL4_sv34hJvW0aZ7W-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="450" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-9" edge="1" parent="1" source="27cfL4_sv34hJvW0aZ7W-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="480" />
+              <mxPoint x="720" y="440" />
+            </Array>
+            <mxPoint x="780" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-2" parent="1" style="pointerEvents=1;verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.capacitors.capacitor_1;" value="&lt;i&gt;&lt;span lang=&quot;EN-US&quot; style=&quot;font-size:14.0pt;&lt;br/&gt;line-height:107%;font-family:&amp;quot;Times New Roman&amp;quot;,serif;mso-fareast-font-family:&lt;br/&gt;Calibri;mso-fareast-theme-font:minor-latin;mso-ansi-language:EN-US;mso-fareast-language:&lt;br/&gt;EN-US;mso-bidi-language:AR-SA&quot;&gt;C&lt;sub&gt;dl&lt;/sub&gt;&lt;/span&gt;&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="100" x="530" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-3" parent="1" style="pointerEvents=1;verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.resistors.resistor_1;" value="&lt;i&gt;&lt;span lang=&quot;EN-US&quot; style=&quot;font-size:14.0pt;&lt;br/&gt;line-height:107%;font-family:&amp;quot;Times New Roman&amp;quot;,serif;mso-fareast-font-family:&lt;br/&gt;Calibri;mso-fareast-theme-font:minor-latin;mso-ansi-language:EN-US;mso-fareast-language:&lt;br/&gt;EN-US;mso-bidi-language:AR-SA&quot;&gt;R&lt;sub&gt;ct&lt;/sub&gt;&lt;/span&gt;&lt;/i&gt;" vertex="1">
+          <mxGeometry height="20" width="100" x="460" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-10" edge="1" parent="1" source="27cfL4_sv34hJvW0aZ7W-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;endArrow=none;endFill=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="720" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-4" parent="1" style="pointerEvents=1;verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.resistors.resistor_1;" value="&lt;i&gt;&lt;span lang=&quot;EN-US&quot; style=&quot;font-size:14.0pt;&lt;br/&gt;line-height:107%;font-family:&amp;quot;Times New Roman&amp;quot;,serif;mso-fareast-font-family:&lt;br/&gt;Calibri;mso-fareast-theme-font:minor-latin;mso-ansi-language:EN-US;mso-fareast-language:&lt;br/&gt;EN-US;mso-bidi-language:AR-SA&quot;&gt;Z&lt;/span&gt;&lt;/i&gt;&lt;sub&gt;&lt;span lang=&quot;EN-US&quot; style=&quot;font-size:14.0pt;line-height:107%;font-family:&amp;quot;Times New Roman&amp;quot;,serif;&lt;br/&gt;mso-fareast-font-family:Calibri;mso-fareast-theme-font:minor-latin;mso-ansi-language:&lt;br/&gt;EN-US;mso-fareast-language:EN-US;mso-bidi-language:AR-SA&quot;&gt;w&lt;/span&gt;&lt;/sub&gt;" vertex="1">
+          <mxGeometry height="20" width="100" x="600" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-5" edge="1" parent="1" source="27cfL4_sv34hJvW0aZ7W-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;" target="27cfL4_sv34hJvW0aZ7W-3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="440" />
+              <mxPoint x="450" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27cfL4_sv34hJvW0aZ7W-8" edge="1" parent="1" source="27cfL4_sv34hJvW0aZ7W-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;" target="27cfL4_sv34hJvW0aZ7W-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
