@@ -1,35 +1,39 @@
-% Скрипт для EIS сканирования схемы Рэндлса с элементом Варбурга и зависимостью от SOC
+% Скрипт для EIS сканирования схемы Рэндлса с элементом Варбурга, зависимостью от SOC и SOH
 clear; clc; close all;
 
-%% ==================== НАСТРОЙКА SOC АККУМУЛЯТОРА ====================
-SOC = 1; % Степень заряда батареи в процентах (задайте значение от 0 до 100)
+%% ================= НАСТРОЙКА СОСТОЯНИЯ АККУМУЛЯТОРА =================
+SOC = 100; % Степень заряда батареи в процентах (0% - разряжен, 100% - заряжен)
+SOH = 100; % Степень "здоровья" батареи в процентах (100% - новая, 80% - изношена)
 %% ====================================================================
 
-% Проверка корректности ввода SOC
-if SOC < 0 || SOC > 100
-    error('Значение SOC должно быть в диапазоне от 0% до 100%.');
+% Проверка корректности вводных данных
+if SOC < 0 || SOC > 100 || SOH < 0 || SOH > 100
+    error('Значения SOC и SOH должны быть строго в диапазоне от 0% до 100%.');
 end
 
-%% 1. Математический расчет параметров схемы в зависимости от SOC
-% Номинальные базовые значения (для SOC = 50%)
+%% 1. Расчет параметров схемы в зависимости от SOC и старения (SOH)
+% Номинальные базовые значения (для новой ячейки SOH = 100% при SOC = 50%)
 Rs_base  = 0.020; % 20 мОм
 Rct_base = 0.015; % 15 мОм
 Cdl_base = 2.5;   % 2.5 Ф
 
-% Моделирование зависимостей (характерных для Li-ion 18650)
-soc_frac = SOC / 100; % перевод в доли от 0 до 1
+soc_frac = SOC / 100; 
+soh_frac = SOH / 100;
 
-% Rs: стабильно на полке, растет на краях разряда/заряда
-Rs_calculated = Rs_base * (1 + 0.3 * (1 - soc_frac)^4 + 0.1 * soc_frac^4);
+% Коэффициенты старения (влияние SOH)
+% При падении SOH до 80%, Rs вырастет примерно в 1.4 раза, Rct - в 2.2 раза, Cdl упадет на ~25%
+aging_factor_Rs  = 1 + 2.0 * (1 - soh_frac)^1.5;
+aging_factor_Rct = 1 + 6.0 * (1 - soh_frac)^1.2;
+aging_factor_Cdl = 1 - 1.2 * (1 - soh_frac); 
+if aging_factor_Cdl < 0.1, aging_factor_Cdl = 0.1; end % защита от отрицательной емкости
 
-% Rct: U-образная зависимость (сильный рост при разряде)
-Rct_calculated = Rct_base * (1 + 4.5 * (1 - soc_frac)^3 + 0.2 * soc_frac^2);
+% Итоговый расчет параметров с совместным учетом SOC и SOH
+Rs_calculated  = Rs_base * (1 + 0.3 * (1 - soc_frac)^4 + 0.1 * soc_frac^4) * aging_factor_Rs;
+Rct_calculated = Rct_base * (1 + 4.5 * (1 - soc_frac)^3 + 0.2 * soc_frac^2) * aging_factor_Rct;
+Cdl_calculated = Cdl_base * (0.6 + 0.4 * sin(pi * soc_frac)) * aging_factor_Cdl;
 
-% Cdl: Перевернутая U-образная зависимость
-Cdl_calculated = Cdl_base * (0.6 + 0.4 * sin(pi * soc_frac));
-
-% Масштабирование элементов Варбурга (диффузия ухудшается при разряде ячейки)
-warburg_factor = (1 + 3.0 * (1 - soc_frac)^2);
+% Масштабирование элементов Варбурга (диффузия также замедляется при старении)
+warburg_factor = (1 + 3.0 * (1 - soc_frac)^2) * (1 + 3.0 * (1 - soh_frac)^1.5);
 Rw1_calc = 0.005 * warburg_factor;
 Cw1_calc = 10    / warburg_factor;
 Rw2_calc = 0.010 * warburg_factor;
@@ -37,15 +41,15 @@ Cw2_calc = 50    / warburg_factor;
 Rw3_calc = 0.025 * warburg_factor;
 Cw3_calc = 250   / warburg_factor;
 
-% Вывод рассчитанных параметров в командное окно
-fprintf('--- Параметры ячейки 18650 для SOC = %d%% ---\n', SOC);
+% Вывод параметров ячейки 18650 в командное окно
+fprintf('--- Параметры ячейки 18650 (SOC = %d%%, SOH = %d%%) ---\n', SOC, SOH);
 fprintf('R_solution (Rs):         %.2f мОм\n', Rs_calculated * 1000);
 fprintf('R_charge_transfer (Rct): %.2f мОм\n', Rct_calculated * 1000);
 fprintf('C_double_layer (Cdl):    %.2f Ф\n', Cdl_calculated);
-fprintf('--------------------------------------------\n\n');
+fprintf('-----------------------------------------------------\n\n');
 
 %% 2. Создание и настройка модели Simulink
-modelName = 'Randles_Warburg_SOC_Automation';
+modelName = 'Randles_Warburg_SOH_Automation';
 if bdIsLoaded(modelName)
     close_system(modelName, 0); 
 end
@@ -73,7 +77,7 @@ add_block(voltageSensor, [modelName, '/Voltage_Meas']);
 add_block(toWS,          [modelName, '/ToWS_V']);
 add_block(toWS,          [modelName, '/ToWS_I']);
 
-% Запись динамически вычисленных параметров в блоки Simulink
+% Запись вычисленных параметров в блоки
 set_param([modelName, '/R_solution'], 'BranchType', 'R', 'Resistance', num2str(Rs_calculated)); 
 set_param([modelName, '/R_charge_transfer'], 'BranchType', 'R', 'Resistance', num2str(Rct_calculated)); 
 set_param([modelName, '/C_double_layer'], 'BranchType', 'C', 'Capacitance', num2str(Cdl_calculated)); 
@@ -112,11 +116,11 @@ add_line(modelName, 'Current_Meas/1', 'ToWS_I/1', 'autorouting', 'on');
 
 Simulink.BlockDiagram.arrangeSystem(modelName);
 
-%% 4. Цикл автоматизации по частотам (EIS Свипирование)
+%% 4. Цикл автоматизации по частотам
 frequencies = logspace(log10(0.01), log10(500), 35); 
 Z_impedance = zeros(size(frequencies)); 
 
-fprintf('Запуск симуляции EIS...\n');
+fprintf('Запуск EIS симуляции ячейки...\n');
 
 for k = 1:length(frequencies)
     freq = frequencies(k);
@@ -143,12 +147,12 @@ end
 fprintf('Расчет завершен!\n');
 
 %% 5. Построение годографа Найквиста (Nyquist Plot)
-figure('Name', sprintf('EIS Nyquist Plot - SOC %d%%', SOC), 'NumberTitle', 'off');
+figure('Name', sprintf('EIS Nyquist Plot - SOC %d%%, SOH %d%%', SOC, SOH), 'NumberTitle', 'off');
 plot(real(Z_impedance)*1000, -imag(Z_impedance)*1000, 'o-', 'LineWidth', 2, 'MarkerFaceColor', 'b');
 grid on; hold on;
 xlabel('Real Impedance, Z'' (мОм)', 'FontSize', 12);
 ylabel('-Imaginary Impedance, -Z'''' (мОм)', 'FontSize', 12);
-title(sprintf('Диаграмма Найквиста аккумулятора 18650 (SOC = %d%%)', SOC), 'FontSize', 13);
+title(sprintf('Диаграмма Найквиста аккумулятора 18650 (SOC = %d%%, SOH = %d%%)', SOC, SOH), 'FontSize', 12);
 
 textPoints = 1:5:35; 
 for p = textPoints
@@ -161,13 +165,13 @@ axis equal;
 Z_magnitude = abs(Z_impedance) * 1000; 
 Z_phase = angle(Z_impedance) * (180 / pi);
 
-figure('Name', sprintf('EIS Bode Plot - SOC %d%%', SOC), 'NumberTitle', 'off');
+figure('Name', sprintf('EIS Bode Plot - SOC %d%%, SOH %d%%', SOC, SOH), 'NumberTitle', 'off');
 
 subplot(2, 1, 1);
 semilogx(frequencies, Z_magnitude, 's-', 'LineWidth', 2, 'Color', [0 0.5 0]);
 grid on;
 ylabel('|Z| (мОм)', 'FontSize', 12);
-title(sprintf('Диаграмма Боде (SOC = %d%%)', SOC), 'FontSize', 13);
+title(sprintf('Диаграмма Боде (SOC = %d%%, SOH = %d%%)', SOC, SOH), 'FontSize', 12);
 
 subplot(2, 1, 2);
 semilogx(frequencies, Z_phase, '^-', 'LineWidth', 2, 'Color', [0.6 0 0]);
