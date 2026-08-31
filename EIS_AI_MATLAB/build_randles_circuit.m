@@ -17,7 +17,7 @@ currentSensor = 'powerlib/Measurements/Current Measurement';
 voltageSensor = 'powerlib/Measurements/Voltage Measurement';
 toWS          = 'simulink/Sinks/To Workspace';
 
-% Добавление основных блоков цепи Рэндлса (Убраны принудительные развороты "down")
+% Добавление основных блоков цепи Рэндлса
 add_block(powerguiBlock, [modelName, '/powergui']);
 add_block(sourceAC,      [modelName, '/EIS_Source'],          'Orientation', 'up');
 add_block(currentSensor, [modelName, '/Current_Meas']);
@@ -55,16 +55,13 @@ set_param([modelName, '/EIS_Source'], 'Amplitude', '0.005');
 set_param([modelName, '/ToWS_V'], 'VariableName', 'sim_V', 'SaveFormat', 'Timeseries');
 set_param([modelName, '/ToWS_I'], 'VariableName', 'sim_I', 'SaveFormat', 'Timeseries');
 
-%% 3. Соединение линий схемы (Исправлены порты датчика напряжения)
-% Источник(+) -> Датчик Тока -> Rs
+%% 3. Соединение линий схемы
 add_line(modelName, 'EIS_Source/LConn1', 'Current_Meas/LConn1', 'autorouting', 'on');
 add_line(modelName, 'Current_Meas/RConn1', 'R_solution/LConn1', 'autorouting', 'on');
 
-% Параллельное разветвление на Cdl и магистраль переноса заряда (Rct + Варбург)
 add_line(modelName, 'R_solution/RConn1', 'C_double_layer/LConn1', 'autorouting', 'on');
 add_line(modelName, 'R_solution/RConn1', 'R_charge_transfer/LConn1', 'autorouting', 'on');
 
-% Последовательное включение элементов Варбурга: Rct -> (Rw1||Cw1) -> (Rw2||Cw2) -> (Rw3||Cw3)
 add_line(modelName, 'R_charge_transfer/RConn1', 'Rw1/LConn1', 'autorouting', 'on');
 add_line(modelName, 'R_charge_transfer/RConn1', 'Cw1/LConn1', 'autorouting', 'on');
 
@@ -76,24 +73,20 @@ add_line(modelName, 'Rw2/RConn1', 'Rw3/LConn1', 'autorouting', 'on');
 add_line(modelName, 'Cw2/RConn1', 'Rw3/LConn1', 'autorouting', 'on');
 add_line(modelName, 'Cw2/RConn1', 'Cw3/LConn1', 'autorouting', 'on');
 
-% Замыкание силовой структуры на минус Источника
 add_line(modelName, 'C_double_layer/RConn1', 'EIS_Source/RConn1', 'autorouting', 'on');
 add_line(modelName, 'Rw3/RConn1', 'EIS_Source/RConn1', 'autorouting', 'on');
 add_line(modelName, 'Cw3/RConn1', 'EIS_Source/RConn1', 'autorouting', 'on');
 
-% ИСПРАВЛЕНО: Датчик напряжения подключается к точкам схемы через свои порты LConn1 и LConn2
 add_line(modelName, 'Current_Meas/RConn1', 'Voltage_Meas/LConn1', 'autorouting', 'on');
 add_line(modelName, 'Rw3/RConn1', 'Voltage_Meas/LConn2', 'autorouting', 'on');
 
-% Связь информационных портов датчиков с блоками Workspace
 add_line(modelName, 'Voltage_Meas/1', 'ToWS_V/1', 'autorouting', 'on');
 add_line(modelName, 'Current_Meas/1', 'ToWS_I/1', 'autorouting', 'on');
 
-% Автовыравнивание схемы на экране
 Simulink.BlockDiagram.arrangeSystem(modelName);
 
 %% 4. Цикл автоматизации по частотам
-frequencies = logspace(log10(0.01), log10(10000), 35); 
+frequencies = logspace(log10(0.01), log10(500), 35); 
 Z_impedance = zeros(size(frequencies)); 
 
 fprintf('Запуск EIS симуляции (Рэндлс + Варбург) для 18650...\n');
@@ -136,3 +129,24 @@ for p = textPoints
          [num2str(round(frequencies(p), 2)), ' Гц'], 'FontSize', 9, 'Color', 'r');
 end
 axis equal;
+
+%% 6. Построение диаграммы Боде (Bode Plot)
+% Вычисление модуля (в мОм) и фазы (в градусах)
+Z_magnitude = abs(Z_impedance) * 1000; 
+Z_phase = angle(Z_impedance) * (180 / pi);
+
+figure('Name', 'EIS Bode Plot - Li-ion 18650', 'NumberTitle', 'off');
+
+% Верхний график: Амплитудно-частотная характеристика (АЧХ)
+subplot(2, 1, 1);
+semilogx(frequencies, Z_magnitude, 's-', 'LineWidth', 2, 'Color', [0 0.5 0]);
+grid on;
+ylabel('|Z| (мОм)', 'FontSize', 12);
+title('Диаграмма Боде для импеданса аккумулятора 18650', 'FontSize', 14);
+
+% Нижний график: Фазочастотная характеристика (ФЧХ)
+subplot(2, 1, 2);
+semilogx(frequencies, Z_phase, '^-', 'LineWidth', 2, 'Color', [0.6 0 0]);
+grid on;
+xlabel('Частота (Гц)', 'FontSize', 12);
+ylabel('Фаза (градусы)', 'FontSize', 12);
