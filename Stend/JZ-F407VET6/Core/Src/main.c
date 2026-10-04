@@ -31,7 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define TIM_PERIOD    (uint16_t)((64*3)-1)
+#define TIM_PERIOD    (uint16_t)((64*10)-1)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,7 +65,8 @@ static void MX_TIM6_Init(void);
 // ----------------------------------------------------------------------------
 void DAC_SetValueCb(uint16_t val)
 {
-  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, val);
+  hdac.Instance->DHR12R1 = val;
+//  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, val);
 }
 // ----------------------------------------------------------------------------
 /* USER CODE END 0 */
@@ -112,7 +113,7 @@ int main(void)
   dds_init.dac_set_value_cb = DAC_SetValueCb;
   
   DDS_Init(&dds_init);
-  
+  HAL_ADC_Start(&hadc1);
   HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 //  HAL_TIM_Base_Start(&htim6);
   HAL_TIM_Base_Start_IT(&htim6);
@@ -121,11 +122,12 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint32_t ticks = HAL_GetTick();
   while (1)
   {
-    HAL_Delay(500);
-    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
-    HAL_Delay(500);
+    if( (HAL_GetTick() - ticks) < 500 )
+      continue;
+    ticks = HAL_GetTick();
     HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
     /* USER CODE END WHILE */
 

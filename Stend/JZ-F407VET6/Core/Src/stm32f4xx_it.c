@@ -41,7 +41,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+extern ADC_HandleTypeDef hadc1;
+uint32_t adc_val;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -202,14 +203,26 @@ void SysTick_Handler(void)
 /**
   * @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
   */
+uint16_t adc_cnt = 0;
+uint16_t AdcArr[1024];
 void TIM6_DAC_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
-DdsTimerIrqCallback();
-HAL_GPIO_TogglePin(LED_2_GPIO_Port, LED_2_Pin);
-  /* USER CODE END TIM6_DAC_IRQn 0 */
-  HAL_DAC_IRQHandler(&hdac);
   HAL_TIM_IRQHandler(&htim6);
+
+  if( HAL_IS_BIT_SET(hadc1.Instance->SR, ADC_SR_EOC) )
+  {
+    if(adc_cnt < 1024)
+      AdcArr[adc_cnt++] = hadc1.Instance->DR;
+    hadc1.Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+  }
+
+  DdsTimerIrqCallback();
+
+  HAL_GPIO_TogglePin(LED_2_GPIO_Port, LED_2_Pin);
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+//  HAL_DAC_IRQHandler(&hdac);
+//  HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
 
   /* USER CODE END TIM6_DAC_IRQn 1 */
