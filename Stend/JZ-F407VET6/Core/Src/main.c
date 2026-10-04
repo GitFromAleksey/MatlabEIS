@@ -31,7 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define TIM_PERIOD    (uint16_t)((64*1)-1)
+#define TIM_PERIOD    (uint16_t)((64*3)-1)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,7 +43,6 @@
 ADC_HandleTypeDef hadc1;
 
 DAC_HandleTypeDef hdac;
-DMA_HandleTypeDef hdma_dac1;
 
 TIM_HandleTypeDef htim6;
 
@@ -54,7 +53,6 @@ TIM_HandleTypeDef htim6;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_DAC_Init(void);
 static void MX_TIM6_Init(void);
@@ -64,18 +62,6 @@ static void MX_TIM6_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//#define BUF_SIZE    64u
-//uint16_t buf_tr[BUF_SIZE] =
-//{
-//127,255,383,511,639,767,895,1023,
-//1151,1279,1407,1535,1663,1791,1919,2047,
-//2175,2303,2431,2559,2687,2815,2943,3071,
-//3199,3327,3455,3583,3711,3839,3967,4095,
-//3967,3839,3711,3583,3455,3327,3199,3071,
-//2943,2815,2687,2559,2431,2303,2175,2047,
-//1919,1791,1663,1535,1407,1279,1151,1023,
-//895,767,639,511,383,255,127,0
-//};
 // ----------------------------------------------------------------------------
 void DAC_SetValueCb(uint16_t val)
 {
@@ -113,7 +99,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_ADC1_Init();
   MX_DAC_Init();
   MX_TIM6_Init();
@@ -123,7 +108,7 @@ int main(void)
   dds_init.Fapb1     = 84000000; // частота тактирования таймера
   dds_init.Prescaler = 0;        // делитель частоты таймера
   dds_init.Period    = TIM_PERIOD;       // Auto reload register ARR
-  dds_init.freq      = 3;
+  dds_init.freq      = 1;
   dds_init.dac_set_value_cb = DAC_SetValueCb;
   
   DDS_Init(&dds_init);
@@ -305,7 +290,7 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 0;//0;
+  htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = TIM_PERIOD;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -322,22 +307,6 @@ static void MX_TIM6_Init(void)
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }
 
