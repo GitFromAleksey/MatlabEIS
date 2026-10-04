@@ -31,7 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define TIM_PERIOD    (uint16_t)((64*1)-1)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -122,7 +122,7 @@ int main(void)
   
   dds_init.Fapb1     = 84000000; // частота тактирования таймера
   dds_init.Prescaler = 0;        // делитель частоты таймера
-  dds_init.Period    = 63;       // Auto reload register ARR
+  dds_init.Period    = TIM_PERIOD;       // Auto reload register ARR
   dds_init.freq      = 3;
   dds_init.dac_set_value_cb = DAC_SetValueCb;
   
@@ -307,7 +307,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;//0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 63;//65535;
+  htim6.Init.Period = TIM_PERIOD;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
