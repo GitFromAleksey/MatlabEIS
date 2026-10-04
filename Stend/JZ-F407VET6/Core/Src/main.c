@@ -64,24 +64,24 @@ static void MX_TIM6_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define BUF_SIZE    64u
-uint16_t buf_tr[BUF_SIZE] =
-{
-127,255,383,511,639,767,895,1023,
-1151,1279,1407,1535,1663,1791,1919,2047,
-2175,2303,2431,2559,2687,2815,2943,3071,
-3199,3327,3455,3583,3711,3839,3967,4095,
-3967,3839,3711,3583,3455,3327,3199,3071,
-2943,2815,2687,2559,2431,2303,2175,2047,
-1919,1791,1663,1535,1407,1279,1151,1023,
-895,767,639,511,383,255,127,0
-};
-//#define BUF_SIZE    20u
-//uint16_t buf_tr[BUF_SIZE] = {
-//0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF,
-//0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000
+//#define BUF_SIZE    64u
+//uint16_t buf_tr[BUF_SIZE] =
+//{
+//127,255,383,511,639,767,895,1023,
+//1151,1279,1407,1535,1663,1791,1919,2047,
+//2175,2303,2431,2559,2687,2815,2943,3071,
+//3199,3327,3455,3583,3711,3839,3967,4095,
+//3967,3839,3711,3583,3455,3327,3199,3071,
+//2943,2815,2687,2559,2431,2303,2175,2047,
+//1919,1791,1663,1535,1407,1279,1151,1023,
+//895,767,639,511,383,255,127,0
 //};
-
+// ----------------------------------------------------------------------------
+void DAC_SetValueCb(uint16_t val)
+{
+  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, val);
+}
+// ----------------------------------------------------------------------------
 /* USER CODE END 0 */
 
 /**
@@ -118,26 +118,30 @@ int main(void)
   MX_DAC_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-//  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+  dds_init_t dds_init;
+  
+  dds_init.Fapb1     = 84000000; // частота тактирования таймера
+  dds_init.Prescaler = 0;        // делитель частоты таймера
+  dds_init.Period    = 63;       // Auto reload register ARR
+  dds_init.freq      = 3;
+  dds_init.dac_set_value_cb = DAC_SetValueCb;
+  
+  DDS_Init(&dds_init);
+  
+  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 //  HAL_TIM_Base_Start(&htim6);
   HAL_TIM_Base_Start_IT(&htim6);
-  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)buf_tr, BUF_SIZE, DAC_ALIGN_12B_R);
+//  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)buf_tr, BUF_SIZE, DAC_ALIGN_12B_R);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//    HAL_Delay(1000);
-//    HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
-//    HAL_GPIO_TogglePin(LED_2_GPIO_Port, LED_2_Pin);
-//    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
-//    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x0);
-//    HAL_Delay(1000);
-//    HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
-//    HAL_GPIO_TogglePin(LED_2_GPIO_Port, LED_2_Pin);
-//    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
-//    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0xFFF);
+    HAL_Delay(500);
+    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
+    HAL_Delay(500);
+    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -303,7 +307,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;//0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 52500-1;//65535;
+  htim6.Init.Period = 63;//65535;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
