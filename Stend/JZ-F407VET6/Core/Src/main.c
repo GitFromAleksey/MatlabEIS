@@ -43,6 +43,9 @@
 ADC_HandleTypeDef hadc1;
 
 DAC_HandleTypeDef hdac;
+DMA_HandleTypeDef hdma_dac1;
+
+TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN PV */
 
@@ -51,14 +54,33 @@ DAC_HandleTypeDef hdac;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_DAC_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define BUF_SIZE    64u
+uint16_t buf_tr[BUF_SIZE] =
+{
+127,255,383,511,639,767,895,1023,
+1151,1279,1407,1535,1663,1791,1919,2047,
+2175,2303,2431,2559,2687,2815,2943,3071,
+3199,3327,3455,3583,3711,3839,3967,4095,
+3967,3839,3711,3583,3455,3327,3199,3071,
+2943,2815,2687,2559,2431,2303,2175,2047,
+1919,1791,1663,1535,1407,1279,1151,1023,
+895,767,639,511,383,255,127,0
+};
+//#define BUF_SIZE    20u
+//uint16_t buf_tr[BUF_SIZE] = {
+//0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF, 0xFFF,
+//0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000
+//};
 
 /* USER CODE END 0 */
 
@@ -91,22 +113,31 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   MX_DAC_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+//  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+//  HAL_TIM_Base_Start(&htim6);
+  HAL_TIM_Base_Start_IT(&htim6);
+  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)buf_tr, BUF_SIZE, DAC_ALIGN_12B_R);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_Delay(1000);
-    HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
-    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x0);
-    HAL_Delay(1000);
-    HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
-    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0xFFF);
+//    HAL_Delay(1000);
+//    HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
+//    HAL_GPIO_TogglePin(LED_2_GPIO_Port, LED_2_Pin);
+//    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
+//    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x0);
+//    HAL_Delay(1000);
+//    HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
+//    HAL_GPIO_TogglePin(LED_2_GPIO_Port, LED_2_Pin);
+//    HAL_GPIO_TogglePin(LED_3_GPIO_Port, LED_3_Pin);
+//    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0xFFF);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -240,7 +271,7 @@ static void MX_DAC_Init(void)
 
   /** DAC channel OUT1 config
   */
-  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
   {
@@ -249,6 +280,60 @@ static void MX_DAC_Init(void)
   /* USER CODE BEGIN DAC_Init 2 */
 
   /* USER CODE END DAC_Init 2 */
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 0;//0;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 52500-1;//65535;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }
 
