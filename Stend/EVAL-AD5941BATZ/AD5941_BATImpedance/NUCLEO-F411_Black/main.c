@@ -180,3 +180,8 @@ void SysTick_Handler(void)
 {
   HAL_IncTick();
 }
+
+void HardFault_Handler(void)
+{
+  printf("HardFault_Handler\n");
+}

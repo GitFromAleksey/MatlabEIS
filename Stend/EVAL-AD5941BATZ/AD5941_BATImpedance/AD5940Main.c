@@ -23,7 +23,7 @@ Analog Devices Software License Agreement.
 #include "BATImpedance.h"
 
 #define APPBUFF_SIZE 512
-uint32_t AppBuff[APPBUFF_SIZE];
+alignas(4) uint32_t AppBuff[APPBUFF_SIZE]; // alignas(4) директива выравнивания для Keil (ARM Compiler)
 
 /* It's your choice here how to do with the data. Here is just an example to print them to UART */
 int32_t BATShowResult(uint32_t *pData, uint32_t DataCount)
