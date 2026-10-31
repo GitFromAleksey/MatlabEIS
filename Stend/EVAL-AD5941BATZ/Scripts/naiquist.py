@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Имя файла с данными
-file_name = "31.log"
+file_name = "калиб.txt"
 
 frequencies = []
 real_parts = []
@@ -80,27 +80,41 @@ plt.axis("equal")
 
 
 # =========================================================================
-# ГРАФИК 2: Диаграмма Боде (Амплитуда и Фаза)
+# ГРАФИК 2: Расширенная диаграмма Боде (4 подграфика)
 # =========================================================================
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+# Создаем 4 строки графиков с общей осью X (sharex=True)
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
 
-# Верхний подграфик: Модуль (Амплитуда)
+# 1. Модуль (Амплитуда)
 ax1.plot(frequencies, magnitude, color="blue", marker="o", markersize=4, linestyle="-")
-ax1.set_ylabel("Амплитуда (Модуль)", fontsize=12, color="blue")
+ax1.set_ylabel("Амплитуда", fontsize=11, color="blue")
 ax1.tick_params(axis='y', labelcolor="blue")
-ax1.set_xscale("log")  # Логарифмическая шкала частот
 ax1.grid(True, which="both", linestyle=":", alpha=0.6)
-ax1.set_title("Диаграмма Боде (AD5941 RcalVolt)", fontsize=14)
+ax1.set_title("Расширенная диаграмма Боде (AD5941 RcalVolt)", fontsize=14)
 
-# Нижний подграфик: Фаза
+# 2. Фаза
 ax2.plot(frequencies, phase, color="red", marker="s", markersize=4, linestyle="-")
-ax2.set_xlabel("Частота (Гц)", fontsize=12)
-ax2.set_ylabel("Фаза (градусы)", fontsize=12, color="red")
+ax2.set_ylabel("Фаза (градусы)", fontsize=11, color="red")
 ax2.tick_params(axis='y', labelcolor="red")
-ax2.set_xscale("log")  # Логарифмическая шкала частот
 ax2.grid(True, which="both", linestyle=":", alpha=0.6)
 
-# Автоматическое выравнивание отступов
+# 3. Действительная часть (Real)
+ax3.plot(frequencies, real_parts, color="darkgreen", marker="^", markersize=4, linestyle="-")
+ax3.set_ylabel("Действительная\nчасть Re(Z)", fontsize=11, color="darkgreen")
+ax3.tick_params(axis='y', labelcolor="darkgreen")
+ax3.grid(True, which="both", linestyle=":", alpha=0.6)
+
+# 4. Мнимая часть (Imag)
+ax4.plot(frequencies, imag_parts, color="purple", marker="v", markersize=4, linestyle="-")
+ax4.set_xlabel("Частота (Гц)", fontsize=12)
+ax4.set_ylabel("Мнимая\nчасть Im(Z)", fontsize=11, color="purple")
+ax4.tick_params(axis='y', labelcolor="purple")
+ax4.grid(True, which="both", linestyle=":", alpha=0.6)
+
+# Включаем логарифмический масштаб для оси частот на самом нижнем графике
+ax4.set_xscale("log")
+
+# Автоматическое распределение элементов во избежание наложения текстов
 plt.tight_layout()
 
 # Показываем оба окна
