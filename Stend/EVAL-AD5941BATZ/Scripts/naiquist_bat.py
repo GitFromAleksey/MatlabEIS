@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Имя файла с новыми данными
-file_name = "изм1.txt"
+file_name = "mes3.txt"
 
 frequencies = []
 real_parts = []
@@ -63,6 +63,31 @@ scatter = plt.scatter(
 
 # Соединяем точки линией
 plt.plot(real_parts, imag_parts, color="gray", linestyle="-", alpha=0.6, zorder=2)
+
+# -------------------------------------------------------------------------
+# НОВЫЙ БЛОК: Добавление текстовых подписей частоты для точек
+# -------------------------------------------------------------------------
+# Шаг прореживания (выводить каждую N-ю точку). 
+# Если точек мало, измените step на 1, чтобы подписать абсолютно все.
+step = 1
+
+for i in range(0, len(frequencies), step):
+    # Форматируем вывод частоты: если >= 1000 Гц, переводим в кГц для компактности
+    f_val = frequencies[i]
+    f_text = f"{f_val/1000:.1f} кГц" if f_val >= 1000 else f"{f_val:.1f} Гц"
+    
+    # Добавляем подпись с небольшим смещением (xytext)
+    plt.annotate(
+        f_text,
+        xy=(real_parts[i], imag_parts[i]),
+        xytext=(5, 5),               # Смещение текста в пунктах по (X, Y)
+        textcoords="offset points",
+        fontsize=7,
+        alpha=0.85,
+        bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.6, ec="none") # Подложка для читаемости
+    )
+# -------------------------------------------------------------------------
+
 
 # Добавляем цветовую шкалу для частот
 cbar = plt.colorbar(scatter)
