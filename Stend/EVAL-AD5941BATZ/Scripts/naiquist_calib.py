@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Имя файла с данными
-file_name = "калиб.txt"
+file_name = "calib.txt"
 
 frequencies = []
 real_parts = []
