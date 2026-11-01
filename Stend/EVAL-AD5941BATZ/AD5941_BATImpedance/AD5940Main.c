@@ -23,7 +23,7 @@ Analog Devices Software License Agreement.
 #include "BATImpedance.h"
 
 #define APPBUFF_SIZE 512
-alignas(4) uint32_t AppBuff[APPBUFF_SIZE]; // alignas(4) директива выравнивания для Keil (ARM Compiler)
+uint32_t AppBuff[APPBUFF_SIZE]; // alignas(4) директива выравнивания для Keil (ARM Compiler)
 
 /* It's your choice here how to do with the data. Here is just an example to print them to UART */
 int32_t BATShowResult(uint32_t *pData, uint32_t DataCount)
@@ -91,7 +91,7 @@ void AD5940BATStructInit(void)
   pBATCfg->SeqStartAddr = 0;
   pBATCfg->MaxSeqLen = 512;
   pBATCfg->RcalVal = 50.0;                /* Value of RCAL on EVAL-AD5941BATZ board is 50mOhm */
-  pBATCfg->ACVoltPP = 300.0f;              /* Pk-pk amplitude is 300mV */
+  pBATCfg->ACVoltPP = 30.0f;              /* Pk-pk amplitude is 300mV */
   pBATCfg->DCVolt = 1200.0f;              /* Offset voltage of 1.2V*/
   pBATCfg->DftNum = DFTNUM_8192;
   
@@ -100,15 +100,57 @@ void AD5940BATStructInit(void)
   pBATCfg->SinFreq = 200;                  /* Sin wave frequency. THis value has no effect if sweep is enabled */
   
   pBATCfg->SweepCfg.SweepEn = bTRUE;      /* Set to bTRUE to enable sweep function */
-  pBATCfg->SweepCfg.SweepStart = 1.0f;    /* Start sweep at 1Hz  */
-  pBATCfg->SweepCfg.SweepStop = 50000.0f;  /* Finish sweep at 1000Hz */
+  pBATCfg->SweepCfg.SweepStart = 1000.0f;    /* Start sweep at 1Hz  */
+  pBATCfg->SweepCfg.SweepStop = 10000.0f;  /* Finish sweep at 1000Hz */
   pBATCfg->SweepCfg.SweepPoints = 50;      /* 100 frequencies in the sweep */
   pBATCfg->SweepCfg.SweepLog = bTRUE;      /* Set to bTRUE to use LOG scale. Set bFALSE to use linear scale */
   
 }
 
+// Функция от google
+//void AD5940_Main(void)
+//{
+//  AppBATCfg_Type *pBATCfg;
+//  AppBATGetCfg(&pBATCfg);
+
+//  uint32_t temp;
+//  AD5940PlatformCfg();
+//  
+//  AD5940BATStructInit(); 
+//  
+//  AppBATInit(AppBuff, APPBUFF_SIZE);    
+//  AppBATCtrl(BATCTRL_MRCAL, 0);     
+//  AppBATCtrl(BATCTRL_START, 0);
+//  
+//  // 1. ПЕРВЫЙ ТОЛЧОК: Принудительно запускаем первую точку сканирования
+//  AD5940_SEQMmrTrig(SEQID_0);
+//  
+//  while(1)
+//  {
+//    /* Ждем прерывания от пина GPIO0/INT */
+//    if(AD5940_GetMCUIntFlag())
+//    {
+//        AD5940_ClrMCUIntFlag();         /* Очищаем флаг МК */
+//        
+//        temp = APPBUFF_SIZE;
+//        
+//        /* Мгновенно вычитываем данные без задержек, предотвращая рваный график */
+//        AppBATISR(AppBuff, &temp);       
+//        
+//        BATShowResult(AppBuff, temp);    
+//        
+//        /* 2. СЛЕДУЮЩИЙ ТОЛЧОК: Если автоматический таймер выключен в SDK,
+//           мы вручную даем команду AD5941 рассчитывать следующую частоту */
+//        AD5940_SEQMmrTrig(SEQID_0);      
+//   }
+//  }
+//}
+
 void AD5940_Main(void)
 {
+  AppBATCfg_Type *pBATCfg;
+  AppBATGetCfg(&pBATCfg);
+
   uint32_t temp;
   AD5940PlatformCfg();
   
@@ -116,16 +158,20 @@ void AD5940_Main(void)
   
   AppBATInit(AppBuff, APPBUFF_SIZE);    /* Initialize BAT application. Provide a buffer, which is used to store sequencer commands */
   AppBATCtrl(BATCTRL_MRCAL, 0);     /* Measur RCAL each point in sweep */
-  AppBATCtrl(BATCTRL_START, 0); 
+  AppBATCtrl(BATCTRL_START, 0);
+  
+  AD5940_SEQMmrTrig(SEQID_0);
   while(1)
   {
     /* Check if interrupt flag which will be set when interrupt occurred. */
     if(AD5940_GetMCUIntFlag())
     {
-        AD5940_ClrMCUIntFlag();         /* Clear this flag */
+        if(pBATCfg->SweepNextFreq == pBATCfg->SweepCfg.SweepStart)
+          AD5940_ClrMCUIntFlag();         /* Clear this flag */
         temp = APPBUFF_SIZE;
         AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
         AD5940_Delay10us(100000);
+//        AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
         BATShowResult(AppBuff, temp);    /* Print measurement results over UART */    
         AD5940_SEQMmrTrig(SEQID_0);      /* Trigger next measurement ussing MMR write*/      
    }

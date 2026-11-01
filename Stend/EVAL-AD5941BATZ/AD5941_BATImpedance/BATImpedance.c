@@ -109,7 +109,8 @@ AD5940Err AppBATCtrl(int32_t BatCtrl, void *pPara)
       if(AppBATCfg.BATInited == bFALSE)
         return AD5940ERR_APPERROR;
       AD5940_WriteReg(REG_AFE_SWMUX, 1<<0);         /* control ADG636 to measure battery */
-      AD5940_WriteReg(REG_AFE_SYNCEXTDEVICE, 0x0);
+      AD5940_WriteReg(REG_AFE_SYNCEXTDEVICE, 1<<2);//AD5940_WriteReg(REG_AFE_SYNCEXTDEVICE, 0x0);
+ //           AD5940_AGPIOSet(AGPIO_Pin2);
       PreCharge(PRECHARGE_BAT);
       PreCharge(PRECHARGE_AMP);
       AD5940_FIFOCtrlS(FIFOSRC_DFT, bFALSE);
@@ -165,7 +166,7 @@ AD5940Err AppBATCtrl(int32_t BatCtrl, void *pPara)
         return AD5940ERR_WAKEUP;
     //Settle input RC filter.
     AD5940_WriteReg(REG_AFE_SWMUX, 0); //control ADG636 to measure rcal
-    AD5940_WriteReg(REG_AFE_SYNCEXTDEVICE, 0x4);
+    AD5940_WriteReg(REG_AFE_SYNCEXTDEVICE, (0<<2));//AD5940_WriteReg(REG_AFE_SYNCEXTDEVICE, 0x4);
     PreCharge(PRECHARGE_RCAL);
     PreCharge(PRECHARGE_AMP);
     AD5940_FIFOCtrlS(FIFOSRC_DFT, bFALSE);
@@ -594,6 +595,55 @@ static AD5940Err AppBATDataProcess(int32_t * const pData, uint32_t *pDataCount)
     }
   return AD5940ERR_OK;
 }
+
+// // Функция от google
+//AD5940Err AppBATISR(void *pBuff, uint32_t *pCount)
+//{
+//  uint32_t FifoCnt;
+//  if(AppBATCfg.BATInited == bFALSE)
+//    return AD5940ERR_APPERROR;
+//    
+//  if(AD5940_WakeUp(10) > 10)  /* Пробуждаем AFE чтением регистра (макс 10 попыток) */
+//    return AD5940ERR_WAKEUP;  
+//    
+//  AD5940_SleepKeyCtrlS(SLPKEY_LOCK);  /* Запрещаем уходить в гибернацию на время чтения */
+//  *pCount = 0;
+
+//  // ИСПРАВЛЕНИЕ: Проверяем правильный флаг прерывания - Готовность данных DFT (DFTRDY)
+//  // В некоторых версиях SDK он называется AFEINTSRC_DFTRDY или AFEINTSRC_DATAFIFORDY
+//  if(AD5940_INTCTestFlag(AFEINTC_1, AFEINTSRC_DFTRDY) == bTRUE)
+//  {
+//    /* Считываем количество элементов. Деление и умножение на 2 гарантирует четное число,
+//       так как данные DFT всегда идут парами: Real и Image */
+//    FifoCnt = (AD5940_FIFOGetCnt()/2)*2;
+//    
+//    if(FifoCnt > 0)
+//    {
+//      AD5940_FIFORd((uint32_t *)pBuff, FifoCnt);
+//      
+//      /* Если требуется переконфигурация AFE на лету, делаем её пока чип активен */
+//      AppBATRegModify(pBuff, &FifoCnt);   
+//      
+//      /* Обработка данных (расчет комплексного импеданса и вывод в UART/файл) */ 
+//      AppBATDataProcess((int32_t*)pBuff, &FifoCnt); 
+//      *pCount = FifoCnt;
+//    }
+
+//    // ИСПРАВЛЕНИЕ: Очищаем именно тот флаг, который тестировали, 
+//    // чтобы пин GPIO0/INT вернулся в высокий уровень (3.3V)
+//    AD5940_INTCClrFlag(AFEINTSRC_DFTRDY);
+//    
+//    // Если график батареи всё еще рваный, попробуйте временно закомментировать UNLOCK,
+//    // чтобы чип не засыпал между близкими точками частоты:
+//    AD5940_SleepKeyCtrlS(SLPKEY_UNLOCK);  
+//    
+//    return 0;
+//  }
+//  
+//  /* Если зашли в ISR, но флаг не наш, обязательно разблокируем сон перед выходом */
+//  AD5940_SleepKeyCtrlS(SLPKEY_UNLOCK); 
+//  return 0;
+//}
 
 /**
 */

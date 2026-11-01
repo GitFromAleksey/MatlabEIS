@@ -62,7 +62,7 @@ SPI_HandleTypeDef  SpiHandle;
 
 #define SYSTICK_MAXCOUNT ((1L<<24)-1) /* we use Systick to complete function Delay10uS(). This value only applies to NUCLEOF411 board. */
 #define SYSTICK_CLKFREQ   100000000L  /* Systick clock frequency in Hz. This only appies to NUCLEOF411 board */
-volatile static uint8_t ucInterrupted = 0;       /* Flag to indicate interrupt occurred */
+volatile /*static*/ uint8_t ucInterrupted = 0;       /* Flag to indicate interrupt occurred */
 
 /**
   @brief Using SPI to transmit N bytes and return the received bytes. This function targets to 
