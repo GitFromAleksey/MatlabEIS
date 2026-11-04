@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Имя файла с новыми данными
-file_name = "mes3.txt"
+file_name = "mes.txt"
 
 frequencies = []
 real_parts = []
