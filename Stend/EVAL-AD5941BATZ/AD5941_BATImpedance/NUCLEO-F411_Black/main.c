@@ -18,6 +18,9 @@ int main(void)
 {
   void AD5940_Main(void);
   MCUPlatformInit(0);
+  
+  HAL_Delay(100); // Пауза, чтобы AD5941 успела стартовать
+  
   AD5940_MCUResourceInit(0);    /* Initialize resources that AD5940 use, like SPI/GPIO/Interrupt. */
 
   printf("Hello AD5940-Build Time:%s\n",__TIME__);
