@@ -10,9 +10,15 @@ Analog Devices Software License Agreement.
 #include "stdio.h"
 #include "AD5940.h"
 #include "stm32f4xx_hal.h"
+#include "cli.h"
 
 /* Functions that used to initialize MCU platform */
 uint32_t MCUPlatformInit(void *pCfg);
+
+void uart_send_str(const char *str)
+{
+  printf("%s", str);
+}
 
 int main(void)
 {
@@ -20,10 +26,16 @@ int main(void)
   MCUPlatformInit(0);
   
   HAL_Delay(100); // Пауза, чтобы AD5941 успела стартовать
-  
-  AD5940_MCUResourceInit(0);    /* Initialize resources that AD5940 use, like SPI/GPIO/Interrupt. */
 
+  AD5940_MCUResourceInit(0);    /* Initialize resources that AD5940 use, like SPI/GPIO/Interrupt. */
+  cli_init();
   printf("Hello AD5940-Build Time:%s\n",__TIME__);
+
+  while(1)
+  {
+    cli_process();
+  }
+
   AD5940_Main();
 }
 
@@ -159,6 +171,7 @@ void USART2_IRQHandler(void)
   {
     c = USART2->DR;
     //UARTCmd_Process(c);
+    cli_rx_char(c);
   }
 }
 
@@ -170,7 +183,7 @@ int fputc(int c, FILE *f)
 #endif
 {
   uint8_t t = c;
-  HAL_UART_Transmit(&UartHandle, &t, 1, 1000); 
+  HAL_UART_Transmit(&UartHandle, &t, 1, 1000);
   return c;
 }
 

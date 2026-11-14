@@ -89,21 +89,21 @@ void AD5940BATStructInit(void)
   AppBATCfg_Type *pBATCfg;
   AppBATGetCfg(&pBATCfg);
   pBATCfg->SeqStartAddr = 0;
-  pBATCfg->MaxSeqLen = 512;
-  pBATCfg->RcalVal = 50.0;                /* Value of RCAL on EVAL-AD5941BATZ board is 50mOhm */
-  pBATCfg->ACVoltPP = 30.0f;              /* Pk-pk amplitude is 300mV */
-  pBATCfg->DCVolt = 1200.0f;              /* Offset voltage of 1.2V*/
-  pBATCfg->DftNum = DFTNUM_8192;
+  pBATCfg->MaxSeqLen    = 512;
+  pBATCfg->RcalVal      = 50.0;             /* Value of RCAL on EVAL-AD5941BATZ board is 50mOhm */
+  pBATCfg->ACVoltPP     = 50.0f;            /* Pk-pk amplitude is 300mV */
+  pBATCfg->DCVolt       = 1200.0f;          /* Offset voltage of 1.2V*/
+  pBATCfg->DftNum       = DFTNUM_8192;
   
-  pBATCfg->FifoThresh = 2;                /* 2 results in FIFO, real and imaginary part. */
+  pBATCfg->FifoThresh   = 2;                /* 2 results in FIFO, real and imaginary part. */
   
-  pBATCfg->SinFreq = 200;                  /* Sin wave frequency. THis value has no effect if sweep is enabled */
+  pBATCfg->SinFreq      = 200;              /* Sin wave frequency. THis value has no effect if sweep is enabled */
   
-  pBATCfg->SweepCfg.SweepEn = bTRUE;      /* Set to bTRUE to enable sweep function */
-  pBATCfg->SweepCfg.SweepStart = 1000.0f;    /* Start sweep at 1Hz  */
-  pBATCfg->SweepCfg.SweepStop = 10000.0f;  /* Finish sweep at 1000Hz */
-  pBATCfg->SweepCfg.SweepPoints = 50;      /* 100 frequencies in the sweep */
-  pBATCfg->SweepCfg.SweepLog = bTRUE;      /* Set to bTRUE to use LOG scale. Set bFALSE to use linear scale */
+  pBATCfg->SweepCfg.SweepEn     = bTRUE;    /* Set to bTRUE to enable sweep function */
+  pBATCfg->SweepCfg.SweepStart  = 1.0f;     /* Start sweep at 1Hz  */
+  pBATCfg->SweepCfg.SweepStop   = 10000.0f; /* Finish sweep at 1000Hz */
+  pBATCfg->SweepCfg.SweepPoints = 50;       /* 100 frequencies in the sweep */
+  pBATCfg->SweepCfg.SweepLog    = bTRUE;    /* Set to bTRUE to use LOG scale. Set bFALSE to use linear scale */
   
 }
 

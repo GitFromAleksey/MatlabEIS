@@ -414,6 +414,11 @@
               <FileType>1</FileType>
               <FilePath>..\BATImpedance.c</FilePath>
             </File>
+            <File>
+              <FileName>cli.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\cli.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
