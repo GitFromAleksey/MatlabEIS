@@ -9,22 +9,18 @@ static volatile bool cmd_ready = false;
 
 // --- Прототипы обработчиков команд ---
 static void cmd_help(int argc, char *argv[]);
-static void cmd_led(int argc, char *argv[]);
-static void cmd_status(int argc, char *argv[]);
+cli_command_t CliCmdHelp = {"help",   "Show available commands", cmd_help};
+//// --- Таблица всех доступных команд ---
+static const cli_command_t *CmdArray = NULL;
+static uint16_t CmdArraySize = 0;
 
-// --- Таблица всех доступных команд ---
-static const cli_command_t cmd_table[] = {
-    {"help",   "Show available commands",       cmd_help},
-    {"led",    "Control LED: led <on|off>",     cmd_led},
-    {"status", "Get system uptime and state",   cmd_status},
-};
-
-#define NUM_COMMANDS (sizeof(cmd_table) / sizeof(cli_command_t))
-
-void cli_init(void) {
-    rx_index = 0;
-    cmd_ready = false;
-    uart_send_str("\r\nMCU CLI Ready. Type 'help' for commands.\r\n> ");
+void CliInit(cli_command_t *cli_cmd_array, uint16_t array_size)
+{
+  rx_index     = 0;
+  cmd_ready    = false;
+  CmdArray     = cli_cmd_array;
+  CmdArraySize = array_size;
+  uart_send_str("\r\nMCU CLI Ready. Type 'help' for commands.\r\n> ");
 }
 
 // Эту функцию вызываем при получении каждого байта по UART
@@ -57,72 +53,95 @@ void cli_rx_char(char c) {
 }
 
 // Эту функцию крутим в main() -> while(1)
-void cli_process(void) {
-    if (!cmd_ready) return;
+void cli_process(void)
+{
 
-    char *argv[CLI_MAX_ARGS];
-    int argc = 0;
 
-    // Разбиваем строку по пробелам на токены
-    char *token = strtok(rx_buffer, " ");
-    while (token != NULL && argc < CLI_MAX_ARGS) {
-        argv[argc++] = token;
-        token = strtok(NULL, " ");
+  if (!cmd_ready)
+    return;
+
+  char *argv[CLI_MAX_ARGS];
+  int argc = 0;
+
+  // Разбиваем строку по пробелам на токены
+  char *token = strtok(rx_buffer, " ");
+  while (token != NULL && argc < CLI_MAX_ARGS) {
+      argv[argc++] = token;
+      token = strtok(NULL, " ");
+  }
+
+  // Ищем команду в таблице
+  if( (argc > 0) && (CmdArray != NULL) )
+  {
+    bool found = false;
+    for(size_t i = 0; i < CmdArraySize; i++)
+    {
+      if(strcmp(argv[0], CmdArray[i].name) == 0)
+      {
+        CmdArray[i].func(argc, argv);
+        found = true;
+        break;
+      }
     }
 
-    // Ищем команду в таблице
-    if (argc > 0) {
-        bool found = false;
-        for (size_t i = 0; i < NUM_COMMANDS; i++) {
-            if (strcmp(argv[0], cmd_table[i].name) == 0) {
-                cmd_table[i].func(argc, argv);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            uart_send_str("Unknown command. Type 'help'.\r\n");
-        }
+    if(!found)
+    {
+      if(strcmp(argv[0], CliCmdHelp.name) == 0)
+      {
+        CliCmdHelp.func(argc, argv);
+      }
+      else
+      {
+        uart_send_str("Unknown command. Type 'help'.\r\n");
+      }
     }
+  }
 
-    // Сброс буфера и приглашение к следующему вводу
-    rx_index = 0;
-    cmd_ready = false;
-    uart_send_str("> ");
+  // Сброс буфера и приглашение к следующему вводу
+  rx_index = 0;
+  cmd_ready = false;
+  uart_send_str("> ");
 }
-
 // ================= РЕАЛИЗАЦИЯ КОМАНД =================
+static void cmd_help(int argc, char *argv[])
+{
+  uart_send_str("Available commands:\r\n");
 
-static void cmd_help(int argc, char *argv[]) {
-    uart_send_str("Available commands:\r\n");
-    for (size_t i = 0; i < NUM_COMMANDS; i++) {
-        uart_send_str("  ");
-        uart_send_str(cmd_table[i].name);
-        uart_send_str("\t- ");
-        uart_send_str(cmd_table[i].help);
-        uart_send_str("\r\n");
-    }
+  if( (CmdArray == NULL) || (CmdArraySize == 0) )
+  {
+    uart_send_str("cli commands array not init.\r\n");
+    return;
+  }
+
+  for(size_t i = 0; i < CmdArraySize; i++)
+  {
+    uart_send_str("  ");
+    uart_send_str(CmdArray[i].name);
+    uart_send_str("\t- ");
+    uart_send_str(CmdArray[i].help);
+    uart_send_str("\r\n");
+  }
 }
 
-static void cmd_led(int argc, char *argv[]) {
-    if (argc < 2) {
-        uart_send_str("Usage: led <on|off>\r\n");
-        return;
-    }
-    if (strcmp(argv[1], "on") == 0) {
-        // HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-        uart_send_str("LED turned ON\r\n");
-    } else if (strcmp(argv[1], "off") == 0) {
-        // HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-        uart_send_str("LED turned OFF\r\n");
-    } else {
-        uart_send_str("Invalid argument. Use 'on' or 'off'\r\n");
-    }
-}
+//static void cmd_led(int argc, char *argv[]) {
+//    if (argc < 2) {
+//        uart_send_str("Usage: led <on|off>\r\n");
+//        return;
+//    }
+//    if (strcmp(argv[1], "on") == 0) {
+//        // HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+//        uart_send_str("LED turned ON\r\n");
+//    } else if (strcmp(argv[1], "off") == 0) {
+//        // HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+//        uart_send_str("LED turned OFF\r\n");
+//    } else {
+//        uart_send_str("Invalid argument. Use 'on' or 'off'\r\n");
+//    }
+//}
 
-static void cmd_status(int argc, char *argv[]) {
-    char msg[64];
-    // Пример форматированного вывода (можно подставить HAL_GetTick())
-    snprintf(msg, sizeof(msg), "System OK. Args count: %d\r\n", argc);
-    uart_send_str(msg);
-}
+//static void cmd_status(int argc, char *argv[]) {
+//    char msg[64];
+//    // Пример форматированного вывода (можно подставить HAL_GetTick())
+//    snprintf(msg, sizeof(msg), "System OK. Args count: %d\r\n", argc);
+//    uart_send_str(msg);
+//}

@@ -17,7 +17,7 @@ typedef struct {
     cli_cmd_func_t func;     // Указатель на функцию
 } cli_command_t;
 
-void cli_init(void);
+void CliInit(cli_command_t *cli_cmd_array, uint16_t array_size);
 void cli_rx_char(char c);    // Вызывать из прерывания UART RX
 void cli_process(void);      // Вызывать в основном цикле while(1)
 

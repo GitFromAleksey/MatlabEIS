@@ -15,10 +15,15 @@ Analog Devices Software License Agreement.
 /* Functions that used to initialize MCU platform */
 uint32_t MCUPlatformInit(void *pCfg);
 
-void uart_send_str(const char *str)
-{
-  printf("%s", str);
-}
+// --- Таблица всех доступных команд ---
+static void CmdStatus(int argc, char *argv[]);
+
+cli_command_t CliCmdTable[] = {
+//    {"led",    "Control LED: led <on|off>",     cmd_led},
+    {"status", "Get system uptime and state",   CmdStatus}
+
+};
+#define CLI_COMMANDS_SIZE (sizeof(CliCmdTable) / sizeof(cli_command_t))
 
 int main(void)
 {
@@ -28,7 +33,7 @@ int main(void)
   HAL_Delay(100); // Пауза, чтобы AD5941 успела стартовать
 
   AD5940_MCUResourceInit(0);    /* Initialize resources that AD5940 use, like SPI/GPIO/Interrupt. */
-  cli_init();
+  CliInit(CliCmdTable, CLI_COMMANDS_SIZE);
   printf("Hello AD5940-Build Time:%s\n",__TIME__);
 
   while(1)
@@ -175,6 +180,11 @@ void USART2_IRQHandler(void)
   }
 }
 
+void uart_send_str(const char *str)
+{
+  printf("%s", str);
+}
+
 #include "stdio.h"
 #ifdef __ICCARM__
 int putchar(int c)
@@ -185,6 +195,13 @@ int fputc(int c, FILE *f)
   uint8_t t = c;
   HAL_UART_Transmit(&UartHandle, &t, 1, 1000);
   return c;
+}
+
+static void CmdStatus(int argc, char *argv[]) {
+    char msg[64];
+    // Пример форматированного вывода (можно подставить HAL_GetTick())
+    snprintf(msg, sizeof(msg), "System OK. Args count: %d\r\n", argc);
+    uart_send_str(msg);
 }
 
 /**
