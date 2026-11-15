@@ -15,19 +15,29 @@ Analog Devices Software License Agreement.
 /* Functions that used to initialize MCU platform */
 uint32_t MCUPlatformInit(void *pCfg);
 
+void AD5940_Main_Init(void);
+void AD5940_Main_Calib(void);
+void AD5940_Main_BatMeasure(void);
+void AD5940_Main(void);
+
 // --- Таблица всех доступных команд ---
 static void CmdStatus(int argc, char *argv[]);
+static void CmdAD5940_Main_Init(int argc, char *argv[]);
+static void CmdAD5940_Main_Calib(int argc, char *argv[]);
+static void CmdAD5940_Main_BatMeasure(int argc, char *argv[]);
 
 cli_command_t CliCmdTable[] = {
 //    {"led",    "Control LED: led <on|off>",     cmd_led},
-    {"status", "Get system uptime and state",   CmdStatus}
+    {"status", "Get system uptime and state", CmdStatus},
+    {"adinit", "", CmdAD5940_Main_Init},
+    {"calib", "",  CmdAD5940_Main_Calib},
+    {"bateis", "", CmdAD5940_Main_BatMeasure}
 
 };
 #define CLI_COMMANDS_SIZE (sizeof(CliCmdTable) / sizeof(cli_command_t))
 
 int main(void)
 {
-  void AD5940_Main(void);
   MCUPlatformInit(0);
   
   HAL_Delay(100); // Пауза, чтобы AD5941 успела стартовать
@@ -36,12 +46,15 @@ int main(void)
   CliInit(CliCmdTable, CLI_COMMANDS_SIZE);
   printf("Hello AD5940-Build Time:%s\n",__TIME__);
 
+  // 
+  AD5940_Main_Init();
+
   while(1)
   {
     cli_process();
   }
 
-  AD5940_Main();
+//  AD5940_Main();
 }
 
 #define DEBUG_UART                         USART2
@@ -196,14 +209,32 @@ int fputc(int c, FILE *f)
   HAL_UART_Transmit(&UartHandle, &t, 1, 1000);
   return c;
 }
-
+// ----------------------------------------------------------------------------
 static void CmdStatus(int argc, char *argv[]) {
     char msg[64];
     // Пример форматированного вывода (можно подставить HAL_GetTick())
     snprintf(msg, sizeof(msg), "System OK. Args count: %d\r\n", argc);
     uart_send_str(msg);
 }
-
+// ----------------------------------------------------------------------------
+static void CmdAD5940_Main_Init(int argc, char *argv[])
+{
+  uart_send_str("AD5940_Main_Init\r\n");
+  AD5940_Main_Init();
+}
+// ----------------------------------------------------------------------------
+static void CmdAD5940_Main_Calib(int argc, char *argv[])
+{
+  uart_send_str("AD5940_Main_Calib\r\n");
+  AD5940_Main_Calib();
+}
+// ----------------------------------------------------------------------------
+static void CmdAD5940_Main_BatMeasure(int argc, char *argv[])
+{
+  uart_send_str("AD5940_Main_BatMeasure\r\n");
+  AD5940_Main_BatMeasure();
+}
+// ----------------------------------------------------------------------------
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None

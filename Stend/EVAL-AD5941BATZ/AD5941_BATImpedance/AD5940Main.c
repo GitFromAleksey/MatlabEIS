@@ -146,6 +146,52 @@ void AD5940BATStructInit(void)
 //  }
 //}
 
+AppBATCfg_Type *pBATCfg;
+uint32_t temp;
+
+void AD5940_Main_Init(void)
+{
+  AppBATGetCfg(&pBATCfg);
+
+  AD5940PlatformCfg();
+  
+  AD5940BATStructInit(); /* Configure your parameters in this function */
+
+  AppBATInit(AppBuff, APPBUFF_SIZE);    /* Initialize BAT application. Provide a buffer, which is used to store sequencer commands */
+}
+
+void AD5940_Main_Calib(void)
+{
+  AppBATCtrl(BATCTRL_MRCAL, 0);     /* Measur RCAL each point in sweep */
+}
+
+extern volatile /*static*/ uint8_t ucInterrupted;       /* Flag to indicate interrupt occurred */
+void AD5940_Main_BatMeasure(void)
+{
+  AppBATCtrl(BATCTRL_START, 0);
+  
+  AD5940_SEQMmrTrig(SEQID_0);
+  ucInterrupted = 1;
+  while(1)
+  {
+    /* Check if interrupt flag which will be set when interrupt occurred. */
+    if(AD5940_GetMCUIntFlag())
+    {
+        if(pBATCfg->SweepNextFreq == pBATCfg->SweepCfg.SweepStart)
+        {
+          AD5940_ClrMCUIntFlag();         /* Clear this flag */
+          return;
+        }
+        temp = APPBUFF_SIZE;
+        AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
+        AD5940_Delay10us(100000);
+//        AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
+        BATShowResult(AppBuff, temp);    /* Print measurement results over UART */    
+        AD5940_SEQMmrTrig(SEQID_0);      /* Trigger next measurement ussing MMR write*/      
+   }
+  }
+}
+// старая функция измерения от производителя
 void AD5940_Main(void)
 {
   AppBATCfg_Type *pBATCfg;
