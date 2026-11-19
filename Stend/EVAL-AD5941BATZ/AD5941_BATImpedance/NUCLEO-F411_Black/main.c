@@ -225,14 +225,16 @@ static void CmdAD5940_Main_Init(int argc, char *argv[])
 // ----------------------------------------------------------------------------
 static void CmdAD5940_Main_Calib(int argc, char *argv[])
 {
-  uart_send_str("AD5940_Main_Calib\r\n");
+  uart_send_str("CalibStart\r\n");
   AD5940_Main_Calib();
+  uart_send_str("CalibStop\r\n");
 }
 // ----------------------------------------------------------------------------
 static void CmdAD5940_Main_BatMeasure(int argc, char *argv[])
 {
-  uart_send_str("AD5940_Main_BatMeasure\r\n");
+  uart_send_str("BatMeasureStart\r\n");
   AD5940_Main_BatMeasure();
+  uart_send_str("BatMeasureStop\r\n");
 }
 // ----------------------------------------------------------------------------
 /**

@@ -170,24 +170,36 @@ void AD5940_Main_BatMeasure(void)
 {
   AppBATCtrl(BATCTRL_START, 0);
   
-  AD5940_SEQMmrTrig(SEQID_0);
+//  AD5940_SEQMmrTrig(SEQID_0);
   ucInterrupted = 1;
   while(1)
   {
+    AD5940_SEQMmrTrig(SEQID_0);
     /* Check if interrupt flag which will be set when interrupt occurred. */
     if(AD5940_GetMCUIntFlag())
     {
-        if(pBATCfg->SweepNextFreq == pBATCfg->SweepCfg.SweepStart)
-        {
-          AD5940_ClrMCUIntFlag();         /* Clear this flag */
-          return;
-        }
+        //if(pBATCfg->SweepNextFreq == pBATCfg->SweepCfg.SweepStop)
+//        if(pBATCfg->SweepCfg.SweepIndex == 0)
+//        {
+//          AD5940_ClrMCUIntFlag();         /* Clear this flag */
+//          return;
+//        }
         temp = APPBUFF_SIZE;
         AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
         AD5940_Delay10us(100000);
 //        AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
         BATShowResult(AppBuff, temp);    /* Print measurement results over UART */    
-        AD5940_SEQMmrTrig(SEQID_0);      /* Trigger next measurement ussing MMR write*/      
+//        AD5940_SEQMmrTrig(SEQID_0);      /* Trigger next measurement ussing MMR write*/      
+        if(pBATCfg->SweepCfg.SweepIndex == 0)
+        {
+          temp = APPBUFF_SIZE;
+          AppBATISR(AppBuff, &temp);       /* Deal with it and provide a buffer to store data we got */
+          AD5940_Delay10us(100000);
+          BATShowResult(AppBuff, temp);    /* Print measurement results over UART */    
+
+          AD5940_ClrMCUIntFlag();         /* Clear this flag */
+          return;
+        }
    }
   }
 }
