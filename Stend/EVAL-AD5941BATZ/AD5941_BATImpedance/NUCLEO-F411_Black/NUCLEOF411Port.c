@@ -250,7 +250,7 @@ uint32_t AD5940_MCUResourceInit(void *pCfg)
   HAL_GPIO_Init(BATT_EIS_ON_OFF_PORT, &GPIO_InitStruct);
   GPIO_InitStruct.Pin       = CHARGE_LOAD_PIN;
   HAL_GPIO_Init(CHARGE_LOAD_PORT, &GPIO_InitStruct);
-  
+
   return 0;
 }
 

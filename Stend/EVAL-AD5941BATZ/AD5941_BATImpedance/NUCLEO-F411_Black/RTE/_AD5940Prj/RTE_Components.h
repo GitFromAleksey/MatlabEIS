@@ -18,6 +18,8 @@
 
 /* Keil::Device:STM32Cube Framework:Classic:1.8.1 */
 #define RTE_DEVICE_FRAMEWORK_CLASSIC
+/* Keil::Device:STM32Cube HAL:ADC:1.8.1 */
+#define RTE_DEVICE_HAL_ADC
 /* Keil::Device:STM32Cube HAL:Common:1.8.1 */
 #define RTE_DEVICE_HAL_COMMON
 /* Keil::Device:STM32Cube HAL:Cortex:1.8.1 */

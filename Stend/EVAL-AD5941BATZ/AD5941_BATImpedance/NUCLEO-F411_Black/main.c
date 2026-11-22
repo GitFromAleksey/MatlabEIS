@@ -11,7 +11,10 @@ Analog Devices Software License Agreement.
 #include "AD5940.h"
 #include "stm32f4xx_hal.h"
 #include "cli.h"
+#include "adc.h"
 
+
+volatile float BattVoltage;
 /* Functions that used to initialize MCU platform */
 uint32_t MCUPlatformInit(void *pCfg);
 
@@ -48,8 +51,21 @@ cli_command_t CliCmdTable[] = {
 };
 #define CLI_COMMANDS_SIZE (sizeof(CliCmdTable) / sizeof(cli_command_t))
 
+#define DELAY   (uint32_t)5000u
+void PrintVoltage(void)
+{
+  static uint32_t time = 0;
+  char msg[64];
 
+  if( (HAL_GetTick() - time) < DELAY )
+    return;
+  time = HAL_GetTick();
+  BattVoltage = Get_Battery_Voltage();
 
+  // Пример форматированного вывода (можно подставить HAL_GetTick())
+  snprintf(msg, sizeof(msg), "Voltage: %f.3\r\n", BattVoltage);
+  uart_send_str(msg);
+}
 
 int main(void)
 {
@@ -58,15 +74,16 @@ int main(void)
   HAL_Delay(100); // Пауза, чтобы AD5941 успела стартовать
 
   AD5940_MCUResourceInit(0);    /* Initialize resources that AD5940 use, like SPI/GPIO/Interrupt. */
+  MX_ADC1_Init();
   CliInit(CliCmdTable, CLI_COMMANDS_SIZE);
   printf("Hello AD5940-Build Time:%s\n",__TIME__);
 
-  // 
   AD5940_Main_Init();
 
   while(1)
   {
     cli_process();
+    PrintVoltage();
   }
 
 //  AD5940_Main();
