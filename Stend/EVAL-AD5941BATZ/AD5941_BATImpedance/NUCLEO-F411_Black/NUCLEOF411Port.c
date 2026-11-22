@@ -12,6 +12,7 @@
  * By using this software you agree to the terms of the associated
  * Analog Devices Software License Agreement.
 **/
+#include <stdbool.h>
 #include "ad5940.h"
 #include "stdio.h"
 #include "stm32f4xx_hal.h"
@@ -57,6 +58,12 @@
 #define ARDUINO_D3_PORT                    GPIOB
 #define ARDUINO_D4_PIN                     GPIO_PIN_5
 #define ARDUINO_D4_PORT                    GPIOB
+
+#define BATT_EIS_ON_OFF_PIN                GPIO_PIN_9
+#define BATT_EIS_ON_OFF_PORT               GPIOB
+
+#define CHARGE_LOAD_PIN                    GPIO_PIN_8
+#define CHARGE_LOAD_PORT                   GPIOB
 
 SPI_HandleTypeDef  SpiHandle;
 
@@ -135,6 +142,22 @@ void Arduino_WriteDn(uint32_t Dn, BoolFlag bHigh)
     else 
       HAL_GPIO_WritePin(ARDUINO_D4_PORT, ARDUINO_D4_PIN, GPIO_PIN_RESET);
   }
+}
+
+void BattEisSwitch(bool on)
+{
+  if(on)
+    HAL_GPIO_WritePin(BATT_EIS_ON_OFF_PORT, BATT_EIS_ON_OFF_PIN, GPIO_PIN_RESET);
+  else
+    HAL_GPIO_WritePin(BATT_EIS_ON_OFF_PORT, BATT_EIS_ON_OFF_PIN, GPIO_PIN_SET);
+}
+
+void ChargeLoadSwitch(bool on)
+{
+  if(on)
+    HAL_GPIO_WritePin(CHARGE_LOAD_PORT, CHARGE_LOAD_PIN, GPIO_PIN_RESET);
+  else
+    HAL_GPIO_WritePin(CHARGE_LOAD_PORT, CHARGE_LOAD_PIN, GPIO_PIN_SET);
 }
 
 uint32_t AD5940_MCUResourceInit(void *pCfg)
@@ -217,6 +240,16 @@ uint32_t AD5940_MCUResourceInit(void *pCfg)
   HAL_GPIO_Init(ARDUINO_D3_PORT, &GPIO_InitStruct);
   GPIO_InitStruct.Pin       = ARDUINO_D4_PIN;
   HAL_GPIO_Init(ARDUINO_D4_PORT, &GPIO_InitStruct);
+
+// дискретные выходы управления реле
+  GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Pull      = GPIO_PULLDOWN;
+  GPIO_InitStruct.Mode      = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Alternate = 0;
+  GPIO_InitStruct.Pin       = BATT_EIS_ON_OFF_PIN;
+  HAL_GPIO_Init(BATT_EIS_ON_OFF_PORT, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin       = CHARGE_LOAD_PIN;
+  HAL_GPIO_Init(CHARGE_LOAD_PORT, &GPIO_InitStruct);
   
   return 0;
 }

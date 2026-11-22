@@ -20,21 +20,36 @@ void AD5940_Main_Calib(void);
 void AD5940_Main_BatMeasure(void);
 void AD5940_Main(void);
 
+// функции управления дискретными синалами
+void BattEisSwitch(bool on);
+void ChargeLoadSwitch(bool on);
 // --- Таблица всех доступных команд ---
 static void CmdStatus(int argc, char *argv[]);
 static void CmdAD5940_Main_Init(int argc, char *argv[]);
 static void CmdAD5940_Main_Calib(int argc, char *argv[]);
 static void CmdAD5940_Main_BatMeasure(int argc, char *argv[]);
 
+static void CmdStm32_BattEisOn(int argc, char *argv[]);
+static void CmdStm32_BattEisOff(int argc, char *argv[]);
+static void CmdStm32_ChargeOn(int argc, char *argv[]);
+static void CmdStm32_LoadOn(int argc, char *argv[]);
+
 cli_command_t CliCmdTable[] = {
 //    {"led",    "Control LED: led <on|off>",     cmd_led},
     {"status", "Get system uptime and state", CmdStatus},
     {"adinit", "", CmdAD5940_Main_Init},
     {"calib", "",  CmdAD5940_Main_Calib},
-    {"bateis", "", CmdAD5940_Main_BatMeasure}
+    {"bateis", "", CmdAD5940_Main_BatMeasure},
+    {"eison", "switch battery relay to eis", CmdStm32_BattEisOn},
+    {"eisoff", "switch battery relay to charge or load", CmdStm32_BattEisOff},
+    {"charge", "switch relay to charge", CmdStm32_ChargeOn},
+    {"load", "switch relay to load", CmdStm32_LoadOn}
 
 };
 #define CLI_COMMANDS_SIZE (sizeof(CliCmdTable) / sizeof(cli_command_t))
+
+
+
 
 int main(void)
 {
@@ -235,6 +250,27 @@ static void CmdAD5940_Main_BatMeasure(int argc, char *argv[])
   uart_send_str("BatMeasureStart\r\n");
   AD5940_Main_BatMeasure();
   uart_send_str("BatMeasureStop\r\n");
+}
+// ----------------------------------------------------------------------------
+static void CmdStm32_BattEisOn(int argc, char *argv[])
+{
+  uart_send_str("CmdStm32_BattEisOn\r\n");
+  BattEisSwitch(true);
+}
+static void CmdStm32_BattEisOff(int argc, char *argv[])
+{
+  uart_send_str("CmdStm32_BattEisOff\r\n");
+  BattEisSwitch(false);
+}
+static void CmdStm32_ChargeOn(int argc, char *argv[])
+{
+  uart_send_str("CmdStm32_ChargeOn\r\n");
+  ChargeLoadSwitch(true);
+}
+static void CmdStm32_LoadOn(int argc, char *argv[])
+{
+  uart_send_str("CmdStm32_LoadOn\r\n");
+  ChargeLoadSwitch(false);
 }
 // ----------------------------------------------------------------------------
 /**
