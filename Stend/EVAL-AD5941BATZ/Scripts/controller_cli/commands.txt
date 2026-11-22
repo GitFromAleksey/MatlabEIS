@@ -1,0 +1,39 @@
+status
+SLEEP: 1
+adinit
+SLEEP: 1
+eison
+SLEEP: 10
+calib
+bateis
+eisoff
+SLEEP: 1
+load
+SLEEP: 900
+eison
+SLEEP: 10
+bateis
+eisoff
+SLEEP: 1
+load
+SLEEP: 900
+eison
+SLEEP: 10
+bateis
+eisoff
+SLEEP: 1
+load
+SLEEP: 900
+eison
+SLEEP: 10
+bateis
+eisoff
+SLEEP: 1
+load
+SLEEP: 900
+eison
+SLEEP: 10
+bateis
+eisoff
+charge
+SLEEP: 1800
